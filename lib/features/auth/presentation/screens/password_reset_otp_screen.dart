@@ -105,6 +105,11 @@ class _PasswordResetOtpScreenState extends State<PasswordResetOtpScreen> {
       } else {
         _focusNodes[index].unfocus();
       }
+    } else {
+      // Empty string (Backspace) -> move focus to previous box
+      if (index > 0) {
+        _focusNodes[index - 1].requestFocus();
+      }
     }
     setState(() => _hasError = false);
   }
@@ -396,40 +401,28 @@ class _PasswordResetOtpScreenState extends State<PasswordResetOtpScreen> {
           ),
         ],
       ),
-      child: RawKeyboardListener(
-        focusNode: FocusNode(),
-        onKey: (event) {
-          if (event is RawKeyDownEvent &&
-              event.logicalKey == LogicalKeyboardKey.backspace) {
-            if (_controllers[index].text.isEmpty && index > 0) {
-              _controllers[index - 1].clear();
-              _focusNodes[index - 1].requestFocus();
-            }
-          }
-        },
-        child: TextField(
-          controller: _controllers[index],
-          focusNode: _focusNodes[index],
-          textAlign: TextAlign.center,
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(1),
-          ],
-          style: TextStyle(
-            fontSize: 24.sp,
-            fontWeight: FontWeight.bold,
-            color: AppColors.darkGreen,
-          ),
-          decoration: const InputDecoration(
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            errorBorder: InputBorder.none,
-            contentPadding: EdgeInsets.zero,
-          ),
-          onChanged: (value) => _onOtpChanged(index, value),
+      child: TextField(
+        controller: _controllers[index],
+        focusNode: _focusNodes[index],
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(1),
+        ],
+        style: TextStyle(
+          fontSize: 24.sp,
+          fontWeight: FontWeight.bold,
+          color: AppColors.darkGreen,
         ),
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
+        onChanged: (value) => _onOtpChanged(index, value),
       ),
     );
   }

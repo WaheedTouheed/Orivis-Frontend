@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../home/presentation/screens/grower_dashboard_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String role; // 'Grower' or 'Vendor'
@@ -58,14 +59,29 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     setState(() => _hasError = false);
 
-    // Demo Mode Notification (Frontend only, no API/DB connection)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Demo mode: OTP verification is not connected yet.'),
-        backgroundColor: AppColors.darkGreen,
-        duration: Duration(seconds: 3),
-      ),
-    );
+    if (widget.role.toLowerCase() == 'grower') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Demo mode: displaying Grower Home Dashboard.'),
+          backgroundColor: AppColors.darkGreen,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => const GrowerDashboardScreen(),
+        ),
+        (route) => false,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Demo mode: OTP verification is not connected yet.'),
+          backgroundColor: AppColors.darkGreen,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _showDemoMessage(String message) {
@@ -416,10 +432,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           ),
         ],
       ),
-      child: RawKeyboardListener(
+      child: KeyboardListener(
         focusNode: FocusNode(),
-        onKey: (event) {
-          if (event is RawKeyDownEvent &&
+        onKeyEvent: (event) {
+          if (event is KeyDownEvent &&
               event.logicalKey == LogicalKeyboardKey.backspace) {
             if (_controllers[index].text.isEmpty && index > 0) {
               _controllers[index - 1].clear();
