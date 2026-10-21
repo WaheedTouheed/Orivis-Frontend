@@ -1,6 +1,6 @@
-# Orivis FYP - Flutter Feature-First Architecture, Complete Grower Dashboard
+# Orivis FYP - Flutter Feature-First Architecture, Redesigned Scan Report Screen
 
-Yeh README document poori details contain karta hai ke Complete **Grower Home Dashboard** (Header, Estimate Card, Start Scan, Quick Actions, Orchards, Ripeness Overview, Recent Scans [3 Cards], Your Listing, Scanning Tip, Sample Data Disclaimer, Persistent Bottom Navigation) kaise implement kiya gaya hai.
+Yeh README document poori details contain karta hai ke Screenshots 2 & 3 ke mutabiq **Scan Report Screen** redesign kaise ki gayi hai.
 
 ---
 
@@ -50,53 +50,55 @@ D:/ORIVIS_FYP/
 │       │           ├── forgot_password_screen.dart    # Forgot Password Screen
 │       │           ├── password_reset_otp_screen.dart # Dedicated 4-Digit Reset OTP Screen
 │       │           └── create_new_password_screen.dart # Create New Password Screen
+│       ├── scan/
+│       │   └── presentation/
+│       │       └── screens/
+│       │           ├── scan_orchard_screen.dart       # Live Camera Preview Scan Screen
+│       │           ├── scan_processing_screen.dart    # 4-Step Sequential Processing Screen
+│       │           ├── scan_review_screen.dart        # Scan Review Screen
+│       │           └── scan_report_screen.dart        # [UPDATED] Complete Redesigned Scan Report Screen
 │       └── home/
 │           └── presentation/
 │               └── screens/
 │                   ├── home_screen.dart               # Default Home Screen
-│                   └── grower_dashboard_screen.dart   # [UPDATED] Complete 11-Section Grower Home Dashboard
+│                   └── grower_dashboard_screen.dart   # Complete 11-Section Grower Home Dashboard
 └── README.md                           # [UPDATED] Complete Documentation & Explanation Log
 ```
 
 ---
 
-## 🌿 Complete Grower Dashboard Sections Implemented:
+## 📊 Redesigned Scan Report Screen (`ScanReportScreen`) Sections:
 
-1. **Dashboard Header (`#19583F`):**
-   - Safe-area protected top inset (`MediaQuery.paddingOf(context).top + 10.h`).
-   - Orange avatar (`#F99A20`, initials `AR`), greeting `Assalam-o-Alaikum`, name `Ali Raza`, translucent green notification button with badge `3`.
+1. **Header & Subheader:**
+   - White back button, centered title **`Scan report`**, share icon button.
+   - Subheader text: `Kinnow Block A · Today · sample result`.
 
-2. **Latest AI Estimate Card:**
-   - Positioned below avatar row overlapping lower green header (`#19583F`).
-   - Title `Latest AI estimate · Kinnow Block A`, pale-orange `Sample` badge (`#FFE8C7`), count `1,248 fruits`, and 3 statistics (`12 Scans`, `1 Active listing`, `3 New bids`).
+2. **Demo Notice Banner:**
+   - Pale-orange banner (`#FFE8C7`): *"Demo mode: All analysis figures shown below are sample data for prototype demonstration."*
 
-3. **Start a New Scan Button:**
-   - Wide orange button (`#F99A20`, 52 px height, camera icon, text `Start a new scan`).
+3. **Detection Overlay Card:**
+   - Dark green card with 4 illustrative detection boxes (orange, pale green, red) and label `Detections overlay (illustrative)`.
 
-4. **Quick Actions Grid:**
-   - 4 actions (`Scan`, `History`, `Sell`, `Payments`) in white rounded square boxes with subtle borders and shadows.
+4. **Estimated Fruit Count Card:**
+   - Large count **`1,248`** with pale-orange badge *"AI estimate, may vary with lighting and occlusion"*.
 
-5. **Orchards Selector:**
-   - Selectable chips (`Kinnow Block A`, `Block C`, `+ Add`) with dynamic state updates.
+5. **Ripeness Card:**
+   - 4 categories with percentages and horizontal progress bars:
+     - `Unripe` (12%, `#9BC6A0`)
+     - `Partially ripe` (28%, `#D8BF45`)
+     - `Ripe` (52%, `#F99A20`)
+     - `Overripe` (8%, `#B5623B`)
 
-6. **Ripeness Overview Card:**
-   - Heading `Ripeness overview`, action link `Full report`, 4-color stacked bar (`Unripe 12%`, `Partially ripe 28%`, `Ripe 52%`, `Overripe 8%`), and color dot legend.
+6. **Visible Health Card:**
+   - Custom-painted Doughnut Ring Chart showing `86%` center text (`Healthy 86%` dark green / `Visibly damaged 14%` red).
+   - Disclaimer: *"AI-based visual assessment only. Not a professional disease diagnosis."*
 
-7. **Recent Scans (3 Cards as shown in Reference Screenshots 2 & 3):**
-   - Section heading `Recent scans` & `See all` action link.
-   - **Card 1:** `Kinnow Block A` · `Today · 1,248 fruits` · `Completed` light-green badge (`#EAF1E9`).
-   - **Card 2:** `Block C` · `3 days ago · 860 fruits` · `Completed` light-green badge (`#EAF1E9`).
-   - **Card 3:** `Kinnow Block A` · `Last week · — fruits` · `Processing` pale-orange badge (`#FFE8C7`).
+7. **Indicative Value Card:**
+   - `Indicative value`: **`PKR 200,000`** with `Sample estimate` pale-orange badge.
 
-8. **Your Listing (Section shown in Screenshot 3):**
-   - Heading `Your listing`.
-   - Card displaying `Kinnow Block A`, `Active` light-green badge (`#EAF1E9`), bidding details `Asking PKR 200,000 · Highest bid PKR 182,000 · 3 bids`, and wide outlined button `Review bids`.
+8. **Action Buttons:**
+   - Primary: Orange button **`Create marketplace listing`** (`#F99A20`).
+   - Secondary: White outlined button **`Export report`** (`#19583F`).
 
-9. **Scanning Tip (Section shown in Screenshot 3):**
-   - Pale-green card (`#EAF1E9`), lightbulb icon, heading `Scanning tip`, and guidance body text *"Move slowly around the tree for about 20 seconds in even daylight. Steady footage gives a more reliable count."*
-
-10. **Sample Data Disclaimer:**
-    - Centered footer text: *"All figures are sample data for the prototype."*
-
-11. **Persistent Bottom Navigation:**
-    - 5 destinations (`Home`, `History`, `Scan` center elevated orange action `#F99A20`, `Bids`, `Profile`) over white rounded surface (24 px radius).
+9. **Persistent Bottom Navigation Bar:**
+   - 5-item persistent bottom navigation bar with elevated center `Scan` button.

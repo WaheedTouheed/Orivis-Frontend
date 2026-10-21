@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../scan/presentation/screens/scan_orchard_screen.dart';
 
 class GrowerDashboardScreen extends StatefulWidget {
   const GrowerDashboardScreen({super.key});
@@ -43,6 +44,14 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
         content: Text(message),
         backgroundColor: AppColors.darkGreen,
         duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _navigateToScanOrchard() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ScanOrchardScreen(),
       ),
     );
   }
@@ -347,9 +356,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                                   borderRadius: BorderRadius.circular(16.r),
                                 ),
                               ),
-                              onPressed: () => _showDemoMessage(
-                                'Demo mode: orchard scanning is not connected yet.',
-                              ),
+                              onPressed: _navigateToScanOrchard,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -383,9 +390,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                               _buildQuickActionItem(
                                 iconData: Icons.camera_alt_outlined,
                                 label: 'Scan',
-                                onTap: () => _showDemoMessage(
-                                  'Demo mode: orchard scanning is not connected yet.',
-                                ),
+                                onTap: _navigateToScanOrchard,
                               ),
                               _buildQuickActionItem(
                                 iconData: Icons.access_time_outlined,
@@ -1173,9 +1178,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
 
   Widget _buildCenterScanNavItem() {
     return InkWell(
-      onTap: () => _showDemoMessage(
-        'Demo mode: orchard scanning is not connected yet.',
-      ),
+      onTap: _navigateToScanOrchard,
       borderRadius: BorderRadius.circular(18.r),
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
