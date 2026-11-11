@@ -11,6 +11,8 @@ import '../../../scan/presentation/screens/scan_orchard_screen.dart';
 import 'grower_dashboard_screen.dart';
 import 'edit_profile_screen.dart';
 import 'my_orchards_screen.dart';
+import 'payment_schedule_screen.dart';
+import 'change_password_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -97,49 +99,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showPaymentScheduleDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-        backgroundColor: Colors.white,
-        title: Text(
-          'Payment Schedule',
-          style: TextStyle(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.bold,
-            color: AppColors.darkGreen,
-          ),
-        ),
-        content: Text(
-          'All payments are processed securely upon escrow verification. Current payout cycle: T+2 business days after bid acceptance.',
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: AppColors.secondaryText,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.darkGreen,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.r),
-              ),
-            ),
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Got it',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
+  void _navigateToPaymentSchedule() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const PaymentScheduleScreen(),
       ),
     );
   }
@@ -269,137 +232,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showChangePasswordDialog() {
-    final formKey = GlobalKey<FormState>();
-    final currentController = TextEditingController();
-    final newController = TextEditingController();
-    final confirmController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-        backgroundColor: Colors.white,
-        title: Text(
-          'Change Password',
-          style: TextStyle(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.bold,
-            color: AppColors.darkGreen,
-          ),
-        ),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: currentController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Current Password',
-                  labelStyle: TextStyle(color: AppColors.secondaryText),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide(
-                        color: AppColors.darkGreen, width: 2.w),
-                  ),
-                ),
-                validator: (val) => val == null || val.isEmpty
-                    ? 'Please enter current password'
-                    : null,
-              ),
-              SizedBox(height: 12.h),
-              TextFormField(
-                controller: newController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'New Password',
-                  labelStyle: TextStyle(color: AppColors.secondaryText),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide(
-                        color: AppColors.darkGreen, width: 2.w),
-                  ),
-                ),
-                validator: (val) => val == null || val.length < 6
-                    ? 'Password must be at least 6 characters'
-                    : null,
-              ),
-              SizedBox(height: 12.h),
-              TextFormField(
-                controller: confirmController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Confirm New Password',
-                  labelStyle: TextStyle(color: AppColors.secondaryText),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide(
-                        color: AppColors.darkGreen, width: 2.w),
-                  ),
-                ),
-                validator: (val) {
-                  if (val != newController.text) {
-                    return 'Passwords do not match';
-                  }
-                  return null;
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: AppColors.secondaryText,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.darkGreen,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.r),
-              ),
-            ),
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Password updated successfully.'),
-                    backgroundColor: AppColors.darkGreen,
-                  ),
-                );
-              }
-            },
-            child: Text(
-              'Update',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
+  void _navigateToChangePassword() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ChangePasswordScreen(),
       ),
     );
   }
@@ -626,7 +462,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             _buildDivider(),
                             _buildActionRow(
                               title: 'Payment schedule',
-                              onTap: _showPaymentScheduleDialog,
+                              onTap: _navigateToPaymentSchedule,
                             ),
                           ]),
 
@@ -675,7 +511,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           _buildCardContainer([
                             _buildActionRow(
                               title: 'Change password',
-                              onTap: _showChangePasswordDialog,
+                              onTap: _navigateToChangePassword,
                             ),
                             _buildDivider(),
                             _buildActionRow(

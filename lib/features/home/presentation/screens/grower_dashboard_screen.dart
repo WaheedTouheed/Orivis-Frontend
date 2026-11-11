@@ -1253,7 +1253,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
           ],
         ),
       ),
-    );cd D:\ORIVIS_FYP_fixed_v2
+    );
   }
 
   Widget _buildCenterScanNavItem() {
