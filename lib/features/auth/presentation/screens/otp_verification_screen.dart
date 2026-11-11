@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/storage/secure_storage_service.dart';
 import '../../../home/presentation/screens/grower_dashboard_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
@@ -43,7 +44,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     return _controllers.map((c) => c.text).join();
   }
 
-  void _handleVerifyCode() {
+  Future<void> _handleVerifyCode() async {
     final otp = _currentOtp;
     if (otp.length < _otpLength) {
       setState(() => _hasError = true);
@@ -58,6 +59,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
 
     setState(() => _hasError = false);
+
+    final SecureStorageService storageService = SecureStorageService();
+    await storageService.saveToken('orivis_demo_token');
+    await storageService.saveUserRole(widget.role.toLowerCase());
+
+    if (!mounted) return;
 
     if (widget.role.toLowerCase() == 'grower') {
       ScaffoldMessenger.of(context).showSnackBar(

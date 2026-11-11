@@ -48,6 +48,7 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
           return;
         }
 
+        var allDone = false;
         setState(() {
           // Mark current step as Completed
           _stepStates[_currentStepIndex] = 2;
@@ -57,11 +58,13 @@ class _ScanProcessingScreenState extends State<ScanProcessingScreen> {
             _currentStepIndex++;
             _stepStates[_currentStepIndex] = 1; // Mark next step In Progress
           } else {
-            // All 4 steps completed
-            timer.cancel();
-            _handleProcessingComplete();
+            allDone = true; // All 4 steps completed
           }
         });
+        if (allDone) {
+          timer.cancel();
+          _handleProcessingComplete();
+        }
       },
     );
   }

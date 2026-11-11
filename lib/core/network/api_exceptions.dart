@@ -16,8 +16,9 @@ class ApiException implements Exception {
         return ApiException(message: 'Receive timeout in connection with server.');
       case DioExceptionType.badResponse:
         final response = dioException.response;
-        if (response != null && response.data != null) {
-          final detail = response.data['detail'];
+        final data = response?.data;
+        if (response != null && data is Map<String, dynamic>) {
+          final detail = data['detail'];
           if (detail != null) {
             return ApiException(
               message: detail.toString(),

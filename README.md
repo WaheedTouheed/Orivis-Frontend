@@ -1,6 +1,6 @@
-# Orivis FYP - Flutter Feature-First Architecture, Redesigned Scan Report Screen
+# Orivis FYP - Flutter Feature-First Architecture, Create Listing Screen
 
-Yeh README document poori details contain karta hai ke Screenshots 2 & 3 ke mutabiq **Scan Report Screen** redesign kaise ki gayi hai.
+Yeh README document poori details contain karta hai ke **Create Listing Screen** (`CreateListingScreen`) kaise implement ki gayi hai aur **Scan Report Screen** ke **`Create marketplace listing`** button ke sath kaise connect ki gayi hai.
 
 ---
 
@@ -56,7 +56,11 @@ D:/ORIVIS_FYP/
 │       │           ├── scan_orchard_screen.dart       # Live Camera Preview Scan Screen
 │       │           ├── scan_processing_screen.dart    # 4-Step Sequential Processing Screen
 │       │           ├── scan_review_screen.dart        # Scan Review Screen
-│       │           └── scan_report_screen.dart        # [UPDATED] Complete Redesigned Scan Report Screen
+│       │           └── scan_report_screen.dart        # Complete Redesigned Scan Report Screen
+│       ├── marketplace/
+│       │   └── presentation/
+│       │       └── screens/
+│       │           └── create_listing_screen.dart     # [NEW] Create Marketplace Listing Screen
 │       └── home/
 │           └── presentation/
 │               └── screens/
@@ -67,38 +71,26 @@ D:/ORIVIS_FYP/
 
 ---
 
-## 📊 Redesigned Scan Report Screen (`ScanReportScreen`) Sections:
+## 🏷️ Create Listing Screen (`CreateListingScreen`) Features:
 
-1. **Header & Subheader:**
-   - White back button, centered title **`Scan report`**, share icon button.
-   - Subheader text: `Kinnow Block A · Today · sample result`.
+1. **Navigation Flow:**
+   - `Grower Dashboard` ➔ `Scan Orchard` ➔ `Processing` ➔ `Scan Report` ➔ `Create marketplace listing` ➔ `CreateListingScreen`.
 
-2. **Demo Notice Banner:**
-   - Pale-orange banner (`#FFE8C7`): *"Demo mode: All analysis figures shown below are sample data for prototype demonstration."*
+2. **Orchard Summary Card:**
+   - Displays dark green fruit thumbnail icon, `Kinnow Block A` title, and summary subtitle `~1,248 fruits (AI estimate) · Ripe 52%`.
 
-3. **Detection Overlay Card:**
-   - Dark green card with 4 illustrative detection boxes (orange, pale green, red) and label `Detections overlay (illustrative)`.
+3. **Form Fields & Validation:**
+   - **`Tree variety`**: Initial value `Kinnow` (editable).
+   - **`Asking price (PKR) *`**: Numeric input with validation (must be positive number).
+   - **`Minimum bid (PKR) *`**: Numeric input with validation (must be positive and cannot exceed Asking Price).
+   - **`Notes for buyers`**: Multiline optional field (`Harvest timing, access, etc.`).
 
-4. **Estimated Fruit Count Card:**
-   - Large count **`1,248`** with pale-orange badge *"AI estimate, may vary with lighting and occlusion"*.
+4. **Open for Bids Toggle:**
+   - White rounded card with `Open for bids` label and green `Switch` (`activeTrackColor: AppColors.darkGreen`).
 
-5. **Ripeness Card:**
-   - 4 categories with percentages and horizontal progress bars:
-     - `Unripe` (12%, `#9BC6A0`)
-     - `Partially ripe` (28%, `#D8BF45`)
-     - `Ripe` (52%, `#F99A20`)
-     - `Overripe` (8%, `#B5623B`)
+5. **Publish Listing Action:**
+   - Prominent orange button **`Publish listing`** (`#F99A20`).
+   - Validates form input and displays SnackBar: *"Demo mode: Your listing has been prepared locally. It has not been published to a marketplace."*, then returns to `GrowerDashboardScreen`.
 
-6. **Visible Health Card:**
-   - Custom-painted Doughnut Ring Chart showing `86%` center text (`Healthy 86%` dark green / `Visibly damaged 14%` red).
-   - Disclaimer: *"AI-based visual assessment only. Not a professional disease diagnosis."*
-
-7. **Indicative Value Card:**
-   - `Indicative value`: **`PKR 200,000`** with `Sample estimate` pale-orange badge.
-
-8. **Action Buttons:**
-   - Primary: Orange button **`Create marketplace listing`** (`#F99A20`).
-   - Secondary: White outlined button **`Export report`** (`#19583F`).
-
-9. **Persistent Bottom Navigation Bar:**
-   - 5-item persistent bottom navigation bar with elevated center `Scan` button.
+6. **Persistent Bottom Navigation:**
+   - 5-item persistent bottom navigation bar.
