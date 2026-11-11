@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../home/presentation/screens/grower_dashboard_screen.dart';
+import '../../../home/presentation/screens/profile_screen.dart';
+import '../../../marketplace/presentation/screens/create_listing_screen.dart';
+import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import 'scan_orchard_screen.dart';
 
 class ScanReportScreen extends StatefulWidget {
@@ -622,9 +625,17 @@ class _ScanReportScreenState extends State<ScanReportScreen> {
                             borderRadius: BorderRadius.circular(14.r),
                           ),
                         ),
-                        onPressed: () => _showDemoMessage(
-                          'Demo mode: marketplace listing is not connected yet.',
-                        ),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CreateListingScreen(
+                                orchardName: widget.orchardName,
+                                estimatedFruits: '1,248',
+                                dominantStage: 'Ripe 52%',
+                              ),
+                            ),
+                          );
+                        },
                         child: Text(
                           'Create marketplace listing',
                           style: TextStyle(
@@ -817,6 +828,18 @@ class _ScanReportScreenState extends State<ScanReportScreen> {
               builder: (_) => const GrowerDashboardScreen(),
             ),
             (route) => false,
+          );
+        } else if (index == 3) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ReceivedBidsScreen(),
+            ),
+          );
+        } else if (index == 4) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ProfileScreen(),
+            ),
           );
         } else {
           setState(() => _selectedBottomIndex = index);

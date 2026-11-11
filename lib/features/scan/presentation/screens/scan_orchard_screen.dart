@@ -34,30 +34,35 @@ class _ScanOrchardScreenState extends State<ScanOrchardScreen> {
 
   Future<void> _initializeCamera() async {
     try {
-      setState(() => _isCameraInitializing = true);
-      _cameras = await availableCameras();
-      if (_cameras.isNotEmpty) {
-        _cameraController = CameraController(
-          _cameras[_selectedCameraIndex],
-          ResolutionPreset.high,
-          enableAudio: false,
-        );
-        await _cameraController!.initialize();
-        if (mounted) {
-          setState(() {
-            _isCameraInitializing = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _isCameraInitializing = false;
-          });
-        }
+      if (_cameras.isEmpty) {
+        _cameras = await availableCameras();
       }
+      if (_cameras.isEmpty) {
+        if (mounted) setState(() => _isCameraInitializing = false);
+        return;
+      }
+
+      final controller = CameraController(
+        _cameras[_selectedCameraIndex],
+        ResolutionPreset.high,
+        enableAudio: false,
+      );
+      await controller.initialize();
+
+      // Screen was closed while the camera was starting up.
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      setState(() {
+        _cameraController = controller;
+        _isCameraInitializing = false;
+      });
     } catch (e) {
+      // Camera permission denied / no hardware (emulator): fall back to demo mode.
       if (mounted) {
         setState(() {
+          _cameraController = null;
           _isCameraInitializing = false;
         });
       }
@@ -93,11 +98,13 @@ class _ScanOrchardScreenState extends State<ScanOrchardScreen> {
     if (_cameraController != null && _cameraController!.value.isInitialized) {
       try {
         final image = await _cameraController!.takePicture();
+        if (!mounted) return;
         setState(() {
           _capturedImagePath = image.path;
         });
         _showDemoMessage('Photo captured successfully.');
       } catch (e) {
+        if (!mounted) return;
         // Fallback for emulator / camera hardware error
         setState(() {
           _capturedImagePath = 'demo_sample_photo';
@@ -116,7 +123,15 @@ class _ScanOrchardScreenState extends State<ScanOrchardScreen> {
   Future<void> _switchCamera() async {
     if (_cameras.length > 1) {
       _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras.length;
-      await _cameraController?.dispose();
+      final oldController = _cameraController;
+      // Remove the controller from the widget tree first; otherwise CameraPreview
+      // is rebuilt with a disposed controller and throws.
+      setState(() {
+        _cameraController = null;
+        _isCameraInitializing = true;
+        _capturedImagePath = null;
+      });
+      await oldController?.dispose();
       await _initializeCamera();
     } else {
       _showDemoMessage('Only one camera is available on this device.');
@@ -126,6 +141,7 @@ class _ScanOrchardScreenState extends State<ScanOrchardScreen> {
   Future<void> _pickFromGallery() async {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (!mounted) return;
       if (image != null) {
         setState(() {
           _capturedImagePath = image.path;
@@ -134,6 +150,7 @@ class _ScanOrchardScreenState extends State<ScanOrchardScreen> {
         _showDemoMessage('Image selected from gallery.');
       }
     } catch (e) {
+      if (!mounted) return;
       // Fallback for emulator without gallery photos
       setState(() {
         _capturedImagePath = 'demo_sample_photo';

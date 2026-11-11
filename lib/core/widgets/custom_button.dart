@@ -29,7 +29,7 @@ class CustomButton extends StatelessWidget {
         height: 50.h,
         child: CupertinoButton.filled(
           padding: EdgeInsets.zero,
-          disabledColor: (backgroundColor ?? AppColors.primary).withOpacity(0.5),
+          disabledColor: (backgroundColor ?? AppColors.primary).withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12.r),
           onPressed: isLoading ? null : onPressed,
           child: isLoading

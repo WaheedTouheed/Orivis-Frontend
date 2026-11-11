@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/storage/secure_storage_service.dart';
 import '../../../auth/presentation/screens/welcome_role_screen.dart';
+import '../../../home/presentation/screens/grower_dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -90,12 +92,21 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
   }
 
-  void _navigateToNextScreen() {
+  Future<void> _navigateToNextScreen() async {
     if (!mounted) return;
+
+    final SecureStorageService storageService = SecureStorageService();
+    final token = await storageService.getToken();
+
+    if (!mounted) return;
+
+    final Widget targetScreen = (token != null && token.isNotEmpty)
+        ? const GrowerDashboardScreen()
+        : const WelcomeRoleScreen();
+
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const WelcomeRoleScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) => targetScreen,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,

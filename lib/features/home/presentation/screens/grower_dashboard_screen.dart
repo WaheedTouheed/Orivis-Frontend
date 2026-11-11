@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/orchard_state_service.dart';
+import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
+import 'add_orchard_screen.dart';
+import 'notifications_screen.dart';
+import 'profile_screen.dart';
 
 class GrowerDashboardScreen extends StatefulWidget {
   const GrowerDashboardScreen({super.key});
@@ -13,7 +18,6 @@ class GrowerDashboardScreen extends StatefulWidget {
 
 class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
   int _selectedBottomIndex = 0;
-  String _selectedOrchard = 'Kinnow Block A';
 
   final Map<String, Map<String, dynamic>> _orchardData = {
     'Kinnow Block A': {
@@ -38,6 +42,14 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
     },
   };
 
+  String _formatAmount(double amount) {
+    final regex = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+    return amount.toStringAsFixed(0).replaceAllMapped(
+          regex,
+          (match) => '${match[1]},',
+        );
+  }
+
   void _showDemoMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -59,17 +71,22 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
-    final currentData =
-        _orchardData[_selectedOrchard] ?? _orchardData['Kinnow Block A']!;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light, // White status bar icons on Android
-        statusBarBrightness: Brightness.dark,      // White status bar text on iOS
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.warmCream,
+    return AnimatedBuilder(
+      animation: OrchardStateService(),
+      builder: (context, child) {
+        final selectedOrchard = OrchardStateService().selectedOrchard;
+        final currentData =
+            _orchardData[selectedOrchard.name] ?? _orchardData['Kinnow Block A']!;
+
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          ),
+          child: Scaffold(
+            backgroundColor: AppColors.warmCream,
         body: Column(
           children: [
             Expanded(
@@ -153,9 +170,13 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
 
                               // Notification Button with Badge
                               InkWell(
-                                onTap: () => _showDemoMessage(
-                                  'Demo mode: notifications are not connected.',
-                                ),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const NotificationsScreen(),
+                                    ),
+                                  );
+                                },
                                 borderRadius: BorderRadius.circular(16.r),
                                 child: Container(
                                   height: 44.r,
@@ -239,7 +260,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        'Latest AI estimate · $_selectedOrchard',
+                                        'Latest AI estimate · ${selectedOrchard.name}',
                                         style: TextStyle(
                                           fontSize: 13.sp,
                                           fontWeight: FontWeight.w500,
@@ -322,6 +343,14 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                                     _buildStatCol(
                                       '${currentData['newBids']}',
                                       'New bids',
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const ReceivedBidsScreen(),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
@@ -400,7 +429,13 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                               _buildQuickActionItem(
                                 iconData: Icons.local_offer_outlined,
                                 label: 'Sell',
-                                onTap: () => setState(() => _selectedBottomIndex = 3),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const ReceivedBidsScreen(),
+                                    ),
+                                  );
+                                },
                               ),
                               _buildQuickActionItem(
                                 iconData: Icons.credit_card_outlined,
@@ -432,12 +467,55 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                             spacing: 10.w,
                             runSpacing: 10.h,
                             children: [
-                              _buildOrchardChip('Kinnow Block A'),
-                              _buildOrchardChip('Block C'),
+                              ...OrchardStateService().orchards.map((orchard) {
+                                final isSelected =
+                                    OrchardStateService().selectedOrchard.id ==
+                                        orchard.id;
+                                return InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      OrchardStateService().selectOrchard(orchard);
+                                    });
+                                  },
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 16.w,
+                                      vertical: 10.h,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFFFFEDD5)
+                                          : Colors.white,
+                                      borderRadius: BorderRadius.circular(12.r),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? const Color(0xFFF99A20)
+                                            : AppColors.cardBorder,
+                                        width: isSelected ? 1.5.w : 1.w,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      orchard.name,
+                                      style: TextStyle(
+                                        fontSize: 13.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: isSelected
+                                            ? AppColors.darkGreen
+                                            : AppColors.primaryText,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
                               InkWell(
-                                onTap: () => _showDemoMessage(
-                                  'Demo mode: adding orchards is not connected yet.',
-                                ),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const AddOrchardScreen(),
+                                    ),
+                                  );
+                                },
                                 borderRadius: BorderRadius.circular(12.r),
                                 child: Container(
                                   padding: EdgeInsets.symmetric(
@@ -457,7 +535,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                                     style: TextStyle(
                                       fontSize: 13.sp,
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.primaryText,
+                                      color: AppColors.darkGreen,
                                     ),
                                   ),
                                 ),
@@ -691,7 +769,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      _selectedOrchard,
+                                      selectedOrchard.name,
                                       style: TextStyle(
                                         fontSize: 16.sp,
                                         fontWeight: FontWeight.w700,
@@ -724,7 +802,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
 
                                 // Bidding Summary Details
                                 Text(
-                                  'Asking PKR 200,000 · Highest bid PKR 182,000 · 3 bids',
+                                  'Asking PKR ${_formatAmount(selectedOrchard.askingPrice)} · ${selectedOrchard.bidCount} bids',
                                   style: TextStyle(
                                     fontSize: 13.sp,
                                     height: 1.35,
@@ -750,9 +828,14 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                                             BorderRadius.circular(14.r),
                                       ),
                                     ),
-                                    onPressed: () => setState(
-                                      () => _selectedBottomIndex = 3,
-                                    ),
+                                    onPressed: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ReceivedBidsScreen(),
+                                        ),
+                                      );
+                                    },
                                     child: Text(
                                       'Review bids',
                                       style: TextStyle(
@@ -896,7 +979,9 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
         ),
       ),
     );
-  }
+  },
+);
+}
 
   Widget _buildRecentScanCard({
     required String orchardTitle,
@@ -997,28 +1082,39 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
     );
   }
 
-  Widget _buildStatCol(String count, String label) {
+  Widget _buildStatCol(
+    String count,
+    String label, {
+    VoidCallback? onTap,
+  }) {
     return Expanded(
-      child: Column(
-        children: [
-          Text(
-            count,
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w800,
-              color: AppColors.darkGreen,
-            ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 4.h),
+          child: Column(
+            children: [
+              Text(
+                count,
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.darkGreen,
+                ),
+              ),
+              SizedBox(height: 2.h),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 2.h),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12.sp,
-              color: AppColors.secondaryText,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1073,37 +1169,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
     );
   }
 
-  Widget _buildOrchardChip(String orchardName) {
-    final isSelected = _selectedOrchard == orchardName;
 
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedOrchard = orchardName;
-        });
-      },
-      borderRadius: BorderRadius.circular(12.r),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFFE8C7) : Colors.white,
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(
-            color: isSelected ? const Color(0xFFF99A20) : AppColors.cardBorder,
-            width: isSelected ? 1.5.w : 1.w,
-          ),
-        ),
-        child: Text(
-          orchardName,
-          style: TextStyle(
-            fontSize: 13.sp,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? AppColors.darkGreen : AppColors.primaryText,
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildLegendItem({required Color color, required String label}) {
     return Row(
@@ -1139,11 +1205,25 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
 
     return InkWell(
       onTap: () {
-        setState(() {
-          _selectedBottomIndex = index;
-        });
-        if (index != 0) {
-          _showDemoMessage('Demo mode: $label tab is not connected yet.');
+        if (index == 3) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ReceivedBidsScreen(),
+            ),
+          );
+        } else if (index == 4) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ProfileScreen(),
+            ),
+          );
+        } else {
+          setState(() {
+            _selectedBottomIndex = index;
+          });
+          if (index != 0) {
+            _showDemoMessage('Demo mode: $label tab is not connected yet.');
+          }
         }
       },
       borderRadius: BorderRadius.circular(14.r),
@@ -1173,7 +1253,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
           ],
         ),
       ),
-    );
+    );cd D:\ORIVIS_FYP_fixed_v2
   }
 
   Widget _buildCenterScanNavItem() {
