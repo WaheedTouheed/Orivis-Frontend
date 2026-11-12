@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/bids_state_service.dart';
 import '../../../../core/services/listing_state_service.dart';
 import '../../../../core/services/orders_state_service.dart';
+import '../../../../core/services/payments_state_service.dart';
 import '../../../home/presentation/screens/grower_dashboard_screen.dart';
 import '../../../home/presentation/screens/profile_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
@@ -83,6 +84,11 @@ class _ReceivedBidsScreenState extends State<ReceivedBidsScreen> {
                   orchardName: 'Kinnow Block A',
                   amount: bid.amount,
                   quantity: bid.quantity,
+                  growerName: 'Grower account',
+                );
+                PaymentsStateService().syncAcceptedBid(
+                  orchardName: 'Kinnow Block A',
+                  totalAmount: bid.amount,
                   growerName: 'Grower account',
                 );
                 ListingStateService().updateVendorBidStatus(

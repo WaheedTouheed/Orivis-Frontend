@@ -6,6 +6,7 @@ import '../../../../core/services/listing_state_service.dart';
 import '../../../home/presentation/screens/notifications_screen.dart';
 import 'vendor_bid_screen.dart';
 import 'vendor_bids_history_screen.dart';
+import 'vendor_payments_screen.dart';
 import '../widgets/vendor_bottom_navigation.dart';
 
 class VendorDashboardScreen extends StatefulWidget {
@@ -550,6 +551,83 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                         ),
 
                         SizedBox(height: 60.h), // space for the overlapping card
+
+                        // Quick Payment Shortcut Banner
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20.w),
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const VendorPaymentsScreen(),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(16.r),
+                            child: Container(
+                              padding: EdgeInsets.all(14.w),
+                              decoration: BoxDecoration(
+                                color: AppColors.darkGreen,
+                                borderRadius: BorderRadius.circular(16.r),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.darkGreen.withValues(alpha: 0.25),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    height: 42.r,
+                                    width: 42.r,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                    child: Icon(
+                                      Icons.account_balance_wallet_rounded,
+                                      color: const Color(0xFFF99A20),
+                                      size: 22.r,
+                                    ),
+                                  ),
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Send Payments for Confirmed Bids',
+                                          style: TextStyle(
+                                            fontSize: 14.sp,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        SizedBox(height: 2.h),
+                                        Text(
+                                          'Pay by percentage stage via Card or Account',
+                                          style: TextStyle(
+                                            fontSize: 11.sp,
+                                            color: Colors.white.withValues(alpha: 0.8),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    color: Colors.white,
+                                    size: 16.r,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: 20.h),
 
                         // ==========================================
                         // SEARCH + FILTER

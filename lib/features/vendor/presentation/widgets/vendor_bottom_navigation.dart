@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../scan/presentation/screens/scan_history_screen.dart';
 import '../screens/vendor_bids_history_screen.dart';
 import '../screens/vendor_dashboard_screen.dart';
 import '../screens/vendor_orders_screen.dart';
+import '../screens/vendor_payments_screen.dart';
 import '../screens/vendor_profile_screen.dart';
 
 class VendorBottomNavigation extends StatelessWidget {
@@ -49,9 +49,9 @@ class VendorBottomNavigation extends StatelessWidget {
               _buildBottomNavItem(
                 context: context,
                 index: 1,
-                iconData: Icons.access_time_outlined,
-                activeIconData: Icons.access_time_filled_rounded,
-                label: 'History',
+                iconData: Icons.account_balance_wallet_outlined,
+                activeIconData: Icons.account_balance_wallet_rounded,
+                label: 'Payments',
               ),
               _buildCenterOrdersNavItem(context),
               _buildBottomNavItem(
@@ -94,7 +94,7 @@ class VendorBottomNavigation extends StatelessWidget {
           );
         } else if (index == 1) {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ScanHistoryScreen()),
+            MaterialPageRoute(builder: (_) => const VendorPaymentsScreen()),
           );
         } else if (index == 3) {
           Navigator.of(context).push(
