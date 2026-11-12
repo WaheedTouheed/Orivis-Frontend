@@ -2,30 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/bids_state_service.dart';
 import '../../../home/presentation/screens/grower_dashboard_screen.dart';
 import '../../../home/presentation/screens/profile_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
 import '../../../scan/presentation/screens/scan_history_screen.dart';
-
-class BidItem {
-  final String id;
-  final String companyName;
-  final String initials;
-  final String quantity;
-  final double amount;
-  String status; // 'Pending', 'Accepted', 'Rejected'
-  final bool isHighest;
-
-  BidItem({
-    required this.id,
-    required this.companyName,
-    required this.initials,
-    required this.quantity,
-    required this.amount,
-    required this.status,
-    this.isHighest = false,
-  });
-}
 
 class ReceivedBidsScreen extends StatefulWidget {
   const ReceivedBidsScreen({super.key});
@@ -36,36 +17,6 @@ class ReceivedBidsScreen extends StatefulWidget {
 
 class _ReceivedBidsScreenState extends State<ReceivedBidsScreen> {
   int _selectedBottomIndex = 3; // Bids tab is selected
-
-  final List<BidItem> _bids = [
-    BidItem(
-      id: '1',
-      companyName: 'Al-Noor Traders',
-      initials: 'AT',
-      quantity: '4 tons',
-      amount: 182000,
-      status: 'Pending',
-      isHighest: true,
-    ),
-    BidItem(
-      id: '2',
-      companyName: 'Madni Fruit Co.',
-      initials: 'MF',
-      quantity: '3.5 tons',
-      amount: 176500,
-      status: 'Pending',
-      isHighest: false,
-    ),
-    BidItem(
-      id: '3',
-      companyName: 'Shah Agency',
-      initials: 'SA',
-      quantity: '4 tons',
-      amount: 168000,
-      status: 'Pending',
-      isHighest: false,
-    ),
-  ];
 
   String _formatAmount(double amount) {
     final regex = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
@@ -124,9 +75,7 @@ class _ReceivedBidsScreenState extends State<ReceivedBidsScreen> {
             ),
             onPressed: () {
               Navigator.of(context).pop();
-              setState(() {
-                bid.status = isAccept ? 'Accepted' : 'Rejected';
-              });
+              BidsStateService().removeBid(bid.id);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
@@ -167,125 +116,180 @@ class _ReceivedBidsScreenState extends State<ReceivedBidsScreen> {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.warmCream,
-        body: Column(
-          children: [
-            // ==========================================
-            // 1. FIXED TOP APP BAR
-            // ==========================================
-            Container(
-              padding: EdgeInsets.only(
-                top: topPadding > 0 ? topPadding + 8.h : 16.h,
-                left: 20.w,
-                right: 20.w,
-                bottom: 16.h,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.warmCream,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  InkWell(
-                    onTap: () => Navigator.of(context).pop(),
-                    borderRadius: BorderRadius.circular(12.r),
-                    child: Container(
-                      height: 40.r,
-                      width: 40.r,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(
-                          color: AppColors.cardBorder,
-                          width: 1.w,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 20.r,
-                        color: AppColors.darkGreen,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    'Received bids',
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.darkGreen,
-                    ),
-                  ),
-                  SizedBox(width: 40.r), // Spacer for title centering
-                ],
-              ),
-            ),
+    return AnimatedBuilder(
+      animation: BidsStateService(),
+      builder: (context, child) {
+        final bids = BidsStateService().bids;
 
-            // ==========================================
-            // 2. SCROLLABLE CONTENT (Orchard Summary + Bid Cards)
-            // ==========================================
-            Expanded(
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-                children: [
-                  // Orchard Summary Card
-                  Container(
-                    padding: EdgeInsets.all(14.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20.r),
-                      border: Border.all(
-                        color: AppColors.cardBorder,
-                        width: 1.w,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          height: 42.r,
-                          width: 42.r,
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+          ),
+          child: Scaffold(
+            backgroundColor: AppColors.warmCream,
+            body: Column(
+              children: [
+                // ==========================================
+                // 1. FIXED TOP APP BAR
+                // ==========================================
+                Container(
+                  padding: EdgeInsets.only(
+                    top: topPadding > 0 ? topPadding + 8.h : 16.h,
+                    left: 20.w,
+                    right: 20.w,
+                    bottom: 16.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.warmCream,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      InkWell(
+                        onTap: () => Navigator.of(context).pop(),
+                        borderRadius: BorderRadius.circular(12.r),
+                        child: Container(
+                          height: 40.r,
+                          width: 40.r,
                           decoration: BoxDecoration(
-                            color: AppColors.darkGreen,
-                            borderRadius: BorderRadius.circular(14.r),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.circle,
-                              size: 18.r,
-                              color: const Color(0xFFF99A20),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: AppColors.cardBorder,
+                              width: 1.w,
                             ),
                           ),
+                          child: Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 20.r,
+                            color: AppColors.darkGreen,
+                          ),
                         ),
-                        SizedBox(width: 14.w),
-                        Expanded(
+                      ),
+                      Text(
+                        'Received bids',
+                        style: TextStyle(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkGreen,
+                        ),
+                      ),
+                      SizedBox(width: 40.r), // Spacer for title centering
+                    ],
+                  ),
+                ),
+
+                // ==========================================
+                // 2. SCROLLABLE CONTENT (Orchard Summary + Bid Cards)
+                // ==========================================
+                Expanded(
+                  child: ListView(
+                    physics: const BouncingScrollPhysics(),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+                    children: [
+                      // Orchard Summary Card
+                      Container(
+                        padding: EdgeInsets.all(14.w),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20.r),
+                          border: Border.all(
+                            color: AppColors.cardBorder,
+                            width: 1.w,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              height: 42.r,
+                              width: 42.r,
+                              decoration: BoxDecoration(
+                                color: AppColors.darkGreen,
+                                borderRadius: BorderRadius.circular(14.r),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.circle,
+                                  size: 18.r,
+                                  color: const Color(0xFFF99A20),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 14.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Kinnow Block A',
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primaryText,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4.h),
+                                  Text(
+                                    'Asking PKR 200,000 · ${bids.length} ${bids.length == 1 ? "bid" : "bids"}',
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
+                                      color: AppColors.secondaryText,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: 16.h),
+
+                      // Bid Cards
+                      if (bids.isEmpty)
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            vertical: 40.h,
+                            horizontal: 20.w,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20.r),
+                            border: Border.all(
+                              color: AppColors.cardBorder,
+                              width: 1.w,
+                            ),
+                          ),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Icon(
+                                Icons.local_offer_outlined,
+                                size: 48.r,
+                                color: AppColors.secondaryText
+                                    .withValues(alpha: 0.5),
+                              ),
+                              SizedBox(height: 12.h),
                               Text(
-                                'Kinnow Block A',
+                                'No pending bids',
                                 style: TextStyle(
-                                  fontSize: 15.sp,
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.primaryText,
                                 ),
                               ),
                               SizedBox(height: 4.h),
                               Text(
-                                'Asking PKR 200,000 · 3 bids',
+                                'All bids have been actioned.',
                                 style: TextStyle(
                                   fontSize: 13.sp,
                                   color: AppColors.secondaryText,
@@ -293,80 +297,77 @@ class _ReceivedBidsScreenState extends State<ReceivedBidsScreen> {
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
+                        )
+                      else
+                        ...bids.map((bid) => _buildBidCard(bid)),
+
+                      SizedBox(height: 24.h),
+                    ],
                   ),
-
-                  SizedBox(height: 16.h),
-
-                  // Bid Cards
-                  ..._bids.map((bid) => _buildBidCard(bid)),
-
-                  SizedBox(height: 24.h),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
 
-        // ==========================================
-        // 3. FIXED BOTTOM NAVIGATION BAR
-        // ==========================================
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(24.r),
-              topRight: Radius.circular(24.r),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildBottomNavItem(
-                    index: 0,
-                    iconData: Icons.home_outlined,
-                    activeIconData: Icons.home_rounded,
-                    label: 'Home',
-                  ),
-                  _buildBottomNavItem(
-                    index: 1,
-                    iconData: Icons.access_time_outlined,
-                    activeIconData: Icons.access_time_filled_rounded,
-                    label: 'History',
-                  ),
-                  // Center Elevated Scan Action
-                  _buildCenterScanNavItem(),
-                  _buildBottomNavItem(
-                    index: 3,
-                    iconData: Icons.local_offer_outlined,
-                    activeIconData: Icons.local_offer_rounded,
-                    label: 'Bids',
-                  ),
-                  _buildBottomNavItem(
-                    index: 4,
-                    iconData: Icons.person_outline_rounded,
-                    activeIconData: Icons.person_rounded,
-                    label: 'Profile',
+            // ==========================================
+            // 3. FIXED BOTTOM NAVIGATION BAR
+            // ==========================================
+            bottomNavigationBar: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24.r),
+                  topRight: Radius.circular(24.r),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildBottomNavItem(
+                        index: 0,
+                        iconData: Icons.home_outlined,
+                        activeIconData: Icons.home_rounded,
+                        label: 'Home',
+                      ),
+                      _buildBottomNavItem(
+                        index: 1,
+                        iconData: Icons.access_time_outlined,
+                        activeIconData: Icons.access_time_filled_rounded,
+                        label: 'History',
+                      ),
+                      // Center Elevated Scan Action
+                      _buildCenterScanNavItem(),
+                      _buildBottomNavItem(
+                        index: 3,
+                        iconData: Icons.local_offer_outlined,
+                        activeIconData: Icons.local_offer_rounded,
+                        label: 'Bids',
+                      ),
+                      _buildBottomNavItem(
+                        index: 4,
+                        iconData: Icons.person_outline_rounded,
+                        activeIconData: Icons.person_rounded,
+                        label: 'Profile',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -459,7 +460,8 @@ class _ReceivedBidsScreenState extends State<ReceivedBidsScreen> {
               ),
               if (bid.isHighest)
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFEDD5), // light orange
                     borderRadius: BorderRadius.circular(12.r),

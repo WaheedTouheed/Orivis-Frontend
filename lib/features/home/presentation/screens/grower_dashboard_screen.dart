@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/bids_state_service.dart';
 import '../../../../core/services/orchard_state_service.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
@@ -75,7 +76,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
     final topPadding = MediaQuery.paddingOf(context).top;
 
     return AnimatedBuilder(
-      animation: OrchardStateService(),
+      animation: Listenable.merge([OrchardStateService(), BidsStateService()]),
       builder: (context, child) {
         final selectedOrchard = OrchardStateService().selectedOrchard;
         final currentData =
@@ -121,21 +122,31 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Avatar (AR)
-                              Container(
-                                height: 48.r,
-                                width: 48.r,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF99A20), // Orange avatar (#F99A20)
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'AR',
-                                    style: TextStyle(
-                                      fontSize: 18.sp,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
+                              // Avatar (AR) & Greeting -> Profile
+                              InkWell(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const ProfileScreen(),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(24.r),
+                                child: Container(
+                                  height: 48.r,
+                                  width: 48.r,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFF99A20), // Orange avatar (#F99A20)
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'AR',
+                                      style: TextStyle(
+                                        fontSize: 18.sp,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -143,30 +154,40 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
 
                               SizedBox(width: 14.w),
 
-                              // Greeting & Name
+                              // Greeting & Name -> Profile
                               Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Assalam-o-Alaikum',
-                                      style: TextStyle(
-                                        fontSize: 13.sp,
-                                        fontWeight: FontWeight.w400,
-                                        color: AppColors.subtitleLight,
+                                child: InkWell(
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const ProfileScreen(),
                                       ),
-                                    ),
-                                    SizedBox(height: 2.h),
-                                    Text(
-                                      'Ali Raza',
-                                      style: TextStyle(
-                                        fontSize: 18.sp,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Assalam-o-Alaikum',
+                                        style: TextStyle(
+                                          fontSize: 13.sp,
+                                          fontWeight: FontWeight.w400,
+                                          color: AppColors.subtitleLight,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                      SizedBox(height: 2.h),
+                                      Text(
+                                        'Ali Raza',
+                                        style: TextStyle(
+                                          fontSize: 18.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
 
@@ -696,7 +717,13 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                                 ),
                               ),
                               InkWell(
-                                onTap: () => setState(() => _selectedBottomIndex = 1),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const ScanHistoryScreen(),
+                                    ),
+                                  );
+                                },
                                 child: Text(
                                   'See all',
                                   style: TextStyle(
@@ -814,7 +841,7 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
 
                                 // Bidding Summary Details
                                 Text(
-                                  'Asking PKR ${_formatAmount(selectedOrchard.askingPrice)} · ${selectedOrchard.bidCount} bids',
+                                  'Asking PKR ${_formatAmount(selectedOrchard.askingPrice)} · ${BidsStateService().bidCount} ${BidsStateService().bidCount == 1 ? "bid" : "bids"}',
                                   style: TextStyle(
                                     fontSize: 13.sp,
                                     height: 1.35,
