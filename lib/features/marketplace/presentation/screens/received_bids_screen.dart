@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../home/presentation/screens/grower_dashboard_screen.dart';
 import '../../../home/presentation/screens/profile_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
+import '../../../scan/presentation/screens/scan_history_screen.dart';
 
 class BidItem {
   final String id;
@@ -588,6 +589,12 @@ class _ReceivedBidsScreenState extends State<ReceivedBidsScreen> {
               builder: (_) => const GrowerDashboardScreen(),
             ),
             (route) => false,
+          );
+        } else if (index == 1) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ScanHistoryScreen(),
+            ),
           );
         } else if (index == 3) {
           setState(() => _selectedBottomIndex = index);

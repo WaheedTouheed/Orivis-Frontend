@@ -6,6 +6,7 @@ import '../../../home/presentation/screens/grower_dashboard_screen.dart';
 import '../../../home/presentation/screens/profile_screen.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
+import '../../../scan/presentation/screens/scan_history_screen.dart';
 
 class CreateListingScreen extends StatefulWidget {
   final String orchardName;
@@ -571,6 +572,12 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               builder: (_) => const GrowerDashboardScreen(),
             ),
             (route) => false,
+          );
+        } else if (index == 1) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ScanHistoryScreen(),
+            ),
           );
         } else if (index == 3) {
           Navigator.of(context).push(
