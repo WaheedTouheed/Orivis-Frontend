@@ -1,9 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../auth/presentation/screens/welcome_role_screen.dart';
 import '../widgets/vendor_bottom_navigation.dart';
+import 'vendor_bids_history_screen.dart';
+import 'vendor_business_otp_screen.dart';
+import 'vendor_change_password_screen.dart';
+import 'vendor_edit_business_details_screen.dart';
+import 'vendor_orders_screen.dart';
+import 'vendor_payments_screen.dart';
 
 class VendorProfileScreen extends StatefulWidget {
   const VendorProfileScreen({super.key});
@@ -13,21 +21,232 @@ class VendorProfileScreen extends StatefulWidget {
 }
 
 class _VendorProfileScreenState extends State<VendorProfileScreen> {
-  final String _vendorName = 'Al-Noor Traders';
-  final String _email = 'alnoor@example.com';
-  final String _phone = '0300 9876543';
+  String _vendorName = 'Al-Noor Traders';
+  String _email = 'alnoor.traders@orivis.pk';
+  String _phone = '+92 300 9876543';
+  String _location = 'Sargodha & Bhalwal Region';
   bool _bidAlerts = true;
   bool _listingAlerts = true;
+  bool _paymentAlerts = true;
+  File? _profileImage;
 
-  void _showDemoMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.darkGreen,
-        duration: const Duration(seconds: 2),
+  Future<void> _startEditBusinessDetailsFlow() async {
+    final verified = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => const VendorBusinessOtpScreen(),
+      ),
+    );
+
+    if (verified != true || !mounted) return;
+
+    final result = await Navigator.of(context).push<Map<String, String>>(
+      MaterialPageRoute(
+        builder: (_) => VendorEditBusinessDetailsScreen(
+          initialCompany: _vendorName,
+          initialRegion: _location,
+          initialEmail: _email,
+          initialPhone: _phone,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _vendorName = result['company'] ?? _vendorName;
+        _location = result['region'] ?? _location;
+        _email = result['email'] ?? _email;
+        _phone = result['phone'] ?? _phone;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Business details updated successfully (Demo).'),
+          backgroundColor: AppColors.darkGreen,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: source);
+      if (!mounted) return;
+      if (pickedFile != null) {
+        setState(() {
+          _profileImage = File(pickedFile.path);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vendor profile picture updated successfully.'),
+            backgroundColor: AppColors.darkGreen,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not pick image: $e'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    }
+  }
+
+  void _showImageSourceModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40.w,
+                height: 4.h,
+                margin: EdgeInsets.only(bottom: 16.h),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            Text(
+              'Update Vendor Profile Picture',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGreen,
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              'Select source to upload commercial vendor profile photo:',
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: AppColors.secondaryText,
+              ),
+            ),
+            SizedBox(height: 16.h),
+
+            // Option 1: Camera
+            ListTile(
+              leading: Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE3EFE6),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.camera_alt_outlined,
+                  color: AppColors.darkGreen,
+                  size: 20.r,
+                ),
+              ),
+              title: Text(
+                'Take Photo (Camera)',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+              subtitle: Text(
+                'Use device camera to capture new photo',
+                style:
+                    TextStyle(fontSize: 11.sp, color: AppColors.secondaryText),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            const Divider(color: AppColors.cardBorder, height: 1),
+
+            // Option 2: Gallery
+            ListTile(
+              leading: Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF3E0),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.photo_library_outlined,
+                  color: const Color(0xFFF99A20),
+                  size: 20.r,
+                ),
+              ),
+              title: Text(
+                'Choose from Gallery',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+              subtitle: Text(
+                'Select photo from device photo gallery',
+                style:
+                    TextStyle(fontSize: 11.sp, color: AppColors.secondaryText),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            const Divider(color: AppColors.cardBorder, height: 1),
+
+            // Option 3: Drive / Files / PC Storage
+            ListTile(
+              leading: Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE3F2FD),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.cloud_upload_outlined,
+                  color: const Color(0xFF1976D2),
+                  size: 20.r,
+                ),
+              ),
+              title: Text(
+                'Browse Files / Drive / PC Storage',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+              subtitle: Text(
+                'Select file from Google Drive or local storage',
+                style:
+                    TextStyle(fontSize: 11.sp, color: AppColors.secondaryText),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            SizedBox(height: 10.h),
+          ],
+        ),
       ),
     );
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -36,8 +255,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
       child: Scaffold(
         backgroundColor: AppColors.warmCream,
@@ -48,7 +267,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   children: [
-                    // Green header
+                    // Green header with Vendor Avatar & Verified Badge
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.only(
@@ -66,26 +285,71 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                       ),
                       child: Column(
                         children: [
-                          // Avatar
-                          Container(
-                            height: 72.r,
-                            width: 72.r,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF99A20),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                'AN',
-                                style: TextStyle(
-                                  fontSize: 24.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                          // Avatar Stack with Edit Camera Badge
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              InkWell(
+                                onTap: _showImageSourceModal,
+                                borderRadius: BorderRadius.circular(44.r),
+                                child: Container(
+                                  height: 84.r,
+                                  width: 84.r,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0xFFF99A20),
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2.5.w,
+                                    ),
+                                  ),
+                                  child: ClipOval(
+                                    child: _profileImage != null
+                                        ? Image.file(
+                                            _profileImage!,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Center(
+                                            child: Text(
+                                              'AN',
+                                              style: TextStyle(
+                                                fontSize: 28.sp,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                  ),
                                 ),
                               ),
-                            ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: InkWell(
+                                  onTap: _showImageSourceModal,
+                                  borderRadius: BorderRadius.circular(14.r),
+                                  child: Container(
+                                    height: 28.r,
+                                    width: 28.r,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: AppColors.darkGreen,
+                                        width: 1.5.w,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt_rounded,
+                                      size: 14.r,
+                                      color: AppColors.darkGreen,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 10.h),
+                          SizedBox(height: 12.h),
                           Text(
                             _vendorName,
                             style: TextStyle(
@@ -94,12 +358,34 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                               color: Colors.white,
                             ),
                           ),
-                          SizedBox(height: 4.h),
-                          Text(
-                            'Vendor Account',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              color: const Color(0xFFDCE9E0),
+                          SizedBox(height: 6.h),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 4.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.verified_rounded,
+                                  color: const Color(0xFFF99A20),
+                                  size: 16.r,
+                                ),
+                                SizedBox(width: 6.w),
+                                Text(
+                                  'Verified Commercial Vendor',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -108,14 +394,14 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
 
                     SizedBox(height: 20.h),
 
-                    // Profile details card
+                    // Quick Management Shortcuts
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20.w),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Account details',
+                            'Vendor Shortcuts',
                             style: TextStyle(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
@@ -124,17 +410,93 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                           ),
                           SizedBox(height: 10.h),
                           _buildInfoCard([
-                            _buildInfoRow(Icons.business_outlined, 'Company', _vendorName),
+                            _buildTapRow(
+                              Icons.inventory_2_outlined,
+                              'My Orders',
+                              () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const VendorOrdersScreen(),
+                                ),
+                              ),
+                            ),
+                            _buildDivider(),
+                            _buildTapRow(
+                              Icons.account_balance_wallet_outlined,
+                              'Payments & Milestones',
+                              () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const VendorPaymentsScreen(),
+                                ),
+                              ),
+                            ),
+                            _buildDivider(),
+                            _buildTapRow(
+                              Icons.local_offer_outlined,
+                              'Bids History',
+                              () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const VendorBidsHistoryScreen(),
+                                ),
+                              ),
+                            ),
+                          ]),
+
+                          SizedBox(height: 20.h),
+
+                          Text(
+                            'Business & Account Details',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                          SizedBox(height: 10.h),
+                          _buildInfoCard([
+                            _buildInfoRow(
+                                Icons.business_outlined, 'Company', _vendorName),
+                            _buildDivider(),
+                            _buildInfoRow(
+                                Icons.location_on_outlined, 'Region', _location),
                             _buildDivider(),
                             _buildInfoRow(Icons.email_outlined, 'Email', _email),
                             _buildDivider(),
                             _buildInfoRow(Icons.phone_outlined, 'Phone', _phone),
                           ]),
+                          SizedBox(height: 12.h),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 44.h,
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                    color: AppColors.darkGreen, width: 1.w),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                                backgroundColor: Colors.white,
+                              ),
+                              onPressed: _startEditBusinessDetailsFlow,
+                              icon: Icon(
+                                Icons.edit_outlined,
+                                size: 18.r,
+                                color: AppColors.darkGreen,
+                              ),
+                              label: Text(
+                                'Edit Details',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.darkGreen,
+                                ),
+                              ),
+                            ),
+                          ),
 
                           SizedBox(height: 20.h),
 
                           Text(
-                            'Notifications',
+                            'Notifications & Alerts',
                             style: TextStyle(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
@@ -143,19 +505,26 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                           ),
                           SizedBox(height: 10.h),
                           _buildInfoCard([
-                            _buildToggleRow('Bid updates', _bidAlerts, (val) {
+                            _buildToggleRow('Bid Updates & Acceptances', _bidAlerts,
+                                (val) {
                               setState(() => _bidAlerts = val);
                             }),
                             _buildDivider(),
-                            _buildToggleRow('New listing alerts', _listingAlerts, (val) {
+                            _buildToggleRow('New Listing Alerts', _listingAlerts,
+                                (val) {
                               setState(() => _listingAlerts = val);
+                            }),
+                            _buildDivider(),
+                            _buildToggleRow('Payment Milestones Alerts', _paymentAlerts,
+                                (val) {
+                              setState(() => _paymentAlerts = val);
                             }),
                           ]),
 
                           SizedBox(height: 20.h),
 
                           Text(
-                            'Actions',
+                            'Security & Session',
                             style: TextStyle(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w600,
@@ -166,13 +535,18 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                           _buildInfoCard([
                             _buildTapRow(
                               Icons.lock_outline_rounded,
-                              'Change password',
-                              () => _showDemoMessage('Demo mode: not connected.'),
+                              'Change Password',
+                              () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const VendorChangePasswordScreen(),
+                                ),
+                              ),
                             ),
                             _buildDivider(),
                             _buildTapRow(
                               Icons.logout_rounded,
-                              'Sign out',
+                              'Sign Out',
                               () {
                                 Navigator.of(context).pushAndRemoveUntil(
                                   MaterialPageRoute(
@@ -188,7 +562,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                       ),
                     ),
 
-                    SizedBox(height: 24.h),
+                    SizedBox(height: 28.h),
                   ],
                 ),
               ),
@@ -229,14 +603,14 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontSize: 14.sp, color: AppColors.secondaryText),
+              style: TextStyle(fontSize: 13.sp, color: AppColors.secondaryText),
             ),
           ),
           Text(
             value,
             style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
               color: AppColors.primaryText,
             ),
           ),
@@ -245,7 +619,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
     );
   }
 
-  Widget _buildToggleRow(String label, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildToggleRow(
+      String label, bool value, ValueChanged<bool> onChanged) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
       child: Row(
@@ -270,6 +645,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
       {Color? color}) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16.r),
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         child: Row(
@@ -281,6 +657,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                 label,
                 style: TextStyle(
                   fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
                   color: color ?? AppColors.primaryText,
                 ),
               ),
@@ -301,5 +678,4 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
       endIndent: 16.w,
     );
   }
-
 }

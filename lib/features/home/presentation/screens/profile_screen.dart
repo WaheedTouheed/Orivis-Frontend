@@ -38,10 +38,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _bidAlerts = true;
   bool _scanReadyAlerts = true;
 
-  Future<void> _pickProfileImage() async {
+  Future<void> _pickProfileImage(ImageSource source) async {
     try {
       final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+      final pickedFile = await picker.pickImage(source: source);
       if (!mounted) return;
       if (pickedFile != null) {
         setState(() {
@@ -64,6 +64,156 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       );
     }
+  }
+
+  void _showImageSourceModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40.w,
+                height: 4.h,
+                margin: EdgeInsets.only(bottom: 16.h),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            Text(
+              'Update Profile Picture',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGreen,
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              'Select option to update your profile photo:',
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: AppColors.secondaryText,
+              ),
+            ),
+            SizedBox(height: 16.h),
+
+            // Option 1: Camera
+            ListTile(
+              leading: Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE3EFE6),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.camera_alt_outlined,
+                  color: AppColors.darkGreen,
+                  size: 20.r,
+                ),
+              ),
+              title: Text(
+                'Take Photo (Camera)',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+              subtitle: Text(
+                'Use device camera to capture new photo',
+                style:
+                    TextStyle(fontSize: 11.sp, color: AppColors.secondaryText),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickProfileImage(ImageSource.camera);
+              },
+            ),
+            const Divider(color: AppColors.cardBorder, height: 1),
+
+            // Option 2: Gallery
+            ListTile(
+              leading: Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF3E0),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.photo_library_outlined,
+                  color: const Color(0xFFF99A20),
+                  size: 20.r,
+                ),
+              ),
+              title: Text(
+                'Choose from Gallery',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+              subtitle: Text(
+                'Select photo from device photo gallery',
+                style:
+                    TextStyle(fontSize: 11.sp, color: AppColors.secondaryText),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickProfileImage(ImageSource.gallery);
+              },
+            ),
+            const Divider(color: AppColors.cardBorder, height: 1),
+
+            // Option 3: Drive / Files / PC Storage
+            ListTile(
+              leading: Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE3F2FD),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.cloud_upload_outlined,
+                  color: const Color(0xFF1976D2),
+                  size: 20.r,
+                ),
+              ),
+              title: Text(
+                'Browse Files / Drive / PC Storage',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+              subtitle: Text(
+                'Select file from Google Drive or local storage',
+                style:
+                    TextStyle(fontSize: 11.sp, color: AppColors.secondaryText),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickProfileImage(ImageSource.gallery);
+              },
+            ),
+            SizedBox(height: 10.h),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _navigateToEditProfile() async {
@@ -355,40 +505,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Stack(
                             alignment: Alignment.center,
                             children: [
-                              Container(
-                                height: 96.r,
-                                width: 96.r,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: const Color(0xFFF99A20),
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 3.w,
+                              InkWell(
+                                onTap: _showImageSourceModal,
+                                borderRadius: BorderRadius.circular(48.r),
+                                child: Container(
+                                  height: 96.r,
+                                  width: 96.r,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0xFFF99A20),
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 3.w,
+                                    ),
                                   ),
-                                ),
-                                child: ClipOval(
-                                  child: _profileImage != null
-                                      ? Image.file(
-                                          _profileImage!,
-                                          fit: BoxFit.cover,
-                                        )
-                                      : Center(
-                                          child: Text(
-                                            'AR',
-                                            style: TextStyle(
-                                              fontSize: 32.sp,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
+                                  child: ClipOval(
+                                    child: _profileImage != null
+                                        ? Image.file(
+                                            _profileImage!,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Center(
+                                            child: Text(
+                                              'AR',
+                                              style: TextStyle(
+                                                fontSize: 32.sp,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
                                             ),
                                           ),
-                                        ),
+                                  ),
                                 ),
                               ),
                               Positioned(
                                 bottom: 0,
                                 right: 0,
                                 child: InkWell(
-                                  onTap: _pickProfileImage,
+                                  onTap: _showImageSourceModal,
                                   borderRadius: BorderRadius.circular(16.r),
                                   child: Container(
                                     height: 32.r,

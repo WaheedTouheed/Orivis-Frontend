@@ -374,6 +374,68 @@ class _VendorBidScreenState extends State<VendorBidScreen> {
                   ),
                 ),
 
+                SizedBox(height: 10.h),
+
+                // Quick Bid Presets Row
+                Wrap(
+                  spacing: 8.w,
+                  runSpacing: 8.h,
+                  children: [
+                    ActionChip(
+                      backgroundColor: const Color(0xFFE3EFE6),
+                      side: const BorderSide(color: AppColors.darkGreen),
+                      label: Text(
+                        'Min: PKR ${_formatAmount(listing.minimumBid)}',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkGreen,
+                        ),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _bidController.text = listing.minimumBid.toInt().toString();
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      backgroundColor: const Color(0xFFFFF3E0),
+                      side: const BorderSide(color: Color(0xFFF99A20)),
+                      label: Text(
+                        'Asking: PKR ${_formatAmount(listing.askingPrice)}',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFFC2410C),
+                        ),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _bidController.text = listing.askingPrice.toInt().toString();
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: AppColors.cardBorder),
+                      label: Text(
+                        '+ PKR 10,000',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryText,
+                        ),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          final current = double.tryParse(_bidController.text) ?? listing.minimumBid;
+                          _bidController.text = (current + 10000).toInt().toString();
+                        });
+                      },
+                    ),
+                  ],
+                ),
+
                 SizedBox(height: 28.h),
 
                 // Submit button

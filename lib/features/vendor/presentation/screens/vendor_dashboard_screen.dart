@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/listing_state_service.dart';
-import '../../../home/presentation/screens/notifications_screen.dart';
+import 'vendor_notifications_screen.dart';
 import 'vendor_bid_screen.dart';
 import 'vendor_bids_history_screen.dart';
 import 'vendor_payments_screen.dart';
@@ -374,7 +374,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                 top: topPadding > 0 ? topPadding + 14.h : 20.h,
                                 left: 20.w,
                                 right: 20.w,
-                                bottom: 68.h,
+                                bottom: 60.h,
                               ),
                               decoration: BoxDecoration(
                                 color: AppColors.darkGreen,
@@ -383,106 +383,121 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                   bottomRight: Radius.circular(28.r),
                                 ),
                               ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Orange Avatar
-                                  Container(
-                                    height: 50.r,
-                                    width: 50.r,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFF99A20),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        'AN',
-                                        style: TextStyle(
-                                          fontSize: 18.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      // Orange Avatar
+                                      Container(
+                                        height: 50.r,
+                                        width: 50.r,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFF99A20),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'AN',
+                                            style: TextStyle(
+                                              fontSize: 18.sp,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  SizedBox(width: 14.w),
-                                  // Greeting + Name
-                                  Expanded(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Assalam-o-Alaikum',
-                                          style: TextStyle(
-                                            fontSize: 13.sp,
-                                            fontWeight: FontWeight.w400,
-                                            color: const Color(0xFFDCE9E0),
-                                          ),
-                                        ),
-                                        SizedBox(height: 2.h),
-                                        Text(
-                                          'Al-Noor Traders',
-                                          style: TextStyle(
-                                            fontSize: 18.sp,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  // Notification Bell
-                                  InkWell(
-                                    onTap: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => const NotificationsScreen(),
-                                        ),
-                                      );
-                                    },
-                                    borderRadius: BorderRadius.circular(16.r),
-                                    child: Container(
-                                      height: 44.r,
-                                      width: 44.r,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(16.r),
-                                      ),
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.notifications_none_outlined,
-                                            size: 22.r,
-                                            color: Colors.white,
-                                          ),
-                                          Positioned(
-                                            top: 8.r,
-                                            right: 8.r,
-                                            child: Container(
-                                              height: 15.r,
-                                              width: 15.r,
-                                              decoration: const BoxDecoration(
-                                                color: Color(0xFFF99A20),
-                                                shape: BoxShape.circle,
+                                      SizedBox(width: 14.w),
+                                      // Greeting + Name
+                                      Expanded(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Assalam-o-Alaikum',
+                                              style: TextStyle(
+                                                fontSize: 13.sp,
+                                                fontWeight: FontWeight.w400,
+                                                color: const Color(0xFFDCE9E0),
                                               ),
-                                              child: Center(
-                                                child: Text(
-                                                  '1',
-                                                  style: TextStyle(
-                                                    fontSize: 9.sp,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
+                                            ),
+                                            SizedBox(height: 2.h),
+                                            Text(
+                                              'Al-Noor Traders',
+                                              style: TextStyle(
+                                                fontSize: 18.sp,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      // Notification Bell
+                                      InkWell(
+                                        onTap: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const VendorNotificationsScreen(),
+                                            ),
+                                          );
+                                        },
+                                        borderRadius:
+                                            BorderRadius.circular(16.r),
+                                        child: Container(
+                                          height: 44.r,
+                                          width: 44.r,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.12),
+                                            borderRadius:
+                                                BorderRadius.circular(16.r),
+                                          ),
+                                          child: Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons
+                                                    .notifications_none_outlined,
+                                                size: 22.r,
+                                                color: Colors.white,
+                                              ),
+                                              Positioned(
+                                                top: 8.r,
+                                                right: 8.r,
+                                                child: Container(
+                                                  height: 15.r,
+                                                  width: 15.r,
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                    color: Color(0xFFF99A20),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: Center(
+                                                    child: Text(
+                                                      '1',
+                                                      style: TextStyle(
+                                                        fontSize: 9.sp,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
                                                   ),
                                                 ),
                                               ),
-                                            ),
+                                            ],
                                           ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ),
+                                  SizedBox(height: 28.h),
                                 ],
                               ),
                             ),
@@ -491,7 +506,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                             Positioned(
                               left: 20.w,
                               right: 20.w,
-                              bottom: -44.h,
+                              bottom: -40.h,
                               child: Container(
                                 padding: EdgeInsets.symmetric(
                                   horizontal: 20.w,
@@ -506,7 +521,8 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.07),
+                                      color:
+                                          Colors.black.withValues(alpha: 0.07),
                                       blurRadius: 14,
                                       offset: const Offset(0, 4),
                                     ),
@@ -525,16 +541,37 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                     ),
                                     SizedBox(height: 12.h),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceAround,
                                       children: [
-                                        _buildBidStat(
-                                          value: pendingBids.toString(),
-                                          label: 'Pending bids',
+                                        InkWell(
+                                          onTap: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const VendorBidsHistoryScreen(),
+                                              ),
+                                            );
+                                          },
+                                          child: _buildBidStat(
+                                            value: pendingBids.toString(),
+                                            label: 'Pending bids',
+                                          ),
                                         ),
                                         _buildVerticalDivider(),
-                                        _buildBidStat(
-                                          value: acceptedBids.toString(),
-                                          label: 'Accepted',
+                                        InkWell(
+                                          onTap: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const VendorPaymentsScreen(),
+                                              ),
+                                            );
+                                          },
+                                          child: _buildBidStat(
+                                            value: acceptedBids.toString(),
+                                            label: 'Accepted',
+                                          ),
                                         ),
                                         _buildVerticalDivider(),
                                         _buildBidStat(
@@ -550,7 +587,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                           ],
                         ),
 
-                        SizedBox(height: 60.h), // space for the overlapping card
+                        SizedBox(height: 56.h), // space for the overlapping card
 
                         // Quick Payment Shortcut Banner
                         Padding(
