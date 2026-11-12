@@ -9,6 +9,7 @@ import '../../../home/presentation/screens/profile_screen.dart';
 import '../../../marketplace/presentation/screens/create_listing_screen.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import 'scan_orchard_screen.dart';
+import 'scan_history_screen.dart';
 
 class ScanReportScreen extends StatefulWidget {
   final String? imagePath;
@@ -828,6 +829,12 @@ class _ScanReportScreenState extends State<ScanReportScreen> {
               builder: (_) => const GrowerDashboardScreen(),
             ),
             (route) => false,
+          );
+        } else if (index == 1) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ScanHistoryScreen(),
+            ),
           );
         } else if (index == 3) {
           Navigator.of(context).push(
