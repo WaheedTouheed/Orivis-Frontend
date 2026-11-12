@@ -8,6 +8,7 @@ import '../../../../core/storage/secure_storage_service.dart';
 import '../../../auth/presentation/screens/welcome_role_screen.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
+import '../../../scan/presentation/screens/scan_history_screen.dart';
 import 'grower_dashboard_screen.dart';
 import 'edit_profile_screen.dart';
 import 'my_orchards_screen.dart';
@@ -762,6 +763,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               builder: (_) => const GrowerDashboardScreen(),
             ),
             (route) => false,
+          );
+        } else if (index == 1) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ScanHistoryScreen(),
+            ),
           );
         } else if (index == 3) {
           Navigator.of(context).push(

@@ -5,6 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import '../../../scan/presentation/screens/scan_report_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
+import '../../../scan/presentation/screens/scan_history_screen.dart';
 import 'grower_dashboard_screen.dart';
 import 'profile_screen.dart';
 
@@ -711,6 +712,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               builder: (_) => const GrowerDashboardScreen(),
             ),
             (route) => false,
+          );
+        } else if (index == 1) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ScanHistoryScreen(),
+            ),
           );
         } else if (index == 3) {
           Navigator.of(context).push(

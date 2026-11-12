@@ -5,9 +5,11 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/orchard_state_service.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
+import '../../../scan/presentation/screens/scan_history_screen.dart';
 import 'add_orchard_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
+import 'payment_schedule_screen.dart';
 
 class GrowerDashboardScreen extends StatefulWidget {
   const GrowerDashboardScreen({super.key});
@@ -424,7 +426,13 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                               _buildQuickActionItem(
                                 iconData: Icons.access_time_outlined,
                                 label: 'History',
-                                onTap: () => setState(() => _selectedBottomIndex = 1),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const ScanHistoryScreen(),
+                                    ),
+                                  );
+                                },
                               ),
                               _buildQuickActionItem(
                                 iconData: Icons.local_offer_outlined,
@@ -440,9 +448,13 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                               _buildQuickActionItem(
                                 iconData: Icons.credit_card_outlined,
                                 label: 'Payments',
-                                onTap: () => _showDemoMessage(
-                                  'Demo mode: payments section is not connected yet.',
-                                ),
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const PaymentScheduleScreen(),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -1205,7 +1217,13 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
 
     return InkWell(
       onTap: () {
-        if (index == 3) {
+        if (index == 1) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const ScanHistoryScreen(),
+            ),
+          );
+        } else if (index == 3) {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => const ReceivedBidsScreen(),
