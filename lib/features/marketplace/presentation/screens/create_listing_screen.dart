@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/listing_state_service.dart';
 import '../../../home/presentation/screens/grower_dashboard_screen.dart';
 import '../../../home/presentation/screens/profile_screen.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
@@ -56,8 +57,51 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   void _handlePublishListing() {
     if (!_formKey.currentState!.validate()) return;
 
+    // Parse values
+    final askingPrice =
+        double.tryParse(_askingPriceController.text.trim()) ?? 0;
+    final minBid = double.tryParse(_minBidController.text.trim()) ?? 0;
+
+    // Build a ripeness/health value from the dominantStage hint
+    // e.g. 'Ripe 52%' -> 52.0
+    double ripenessVal = 52.0;
+    final ripeMatch =
+        RegExp(r'(\d+)').firstMatch(widget.dominantStage);
+    if (ripeMatch != null) {
+      ripenessVal = double.tryParse(ripeMatch.group(1) ?? '') ?? 52.0;
+    }
+
+    // Parse estimated fruits, e.g. '1,248' -> 1248
+    final estimatedFruits = int.tryParse(
+          widget.estimatedFruits.replaceAll(',', ''),
+        ) ??
+        0;
+
+    // Add listing to shared state
+    final newListing = ListingModel(
+      id: 'lst_${DateTime.now().millisecondsSinceEpoch}',
+      orchardId: DateTime.now().millisecondsSinceEpoch.toString(),
+      orchardName: widget.orchardName,
+      location: 'Sargodha', // default location from orchard
+      fruitVariety: _varietyController.text.trim().isEmpty
+          ? 'Kinnow'
+          : _varietyController.text.trim(),
+      estimatedFruitCount: estimatedFruits,
+      ripenessPercentage: ripenessVal,
+      healthyPercentage: 85.0, // default
+      askingPrice: askingPrice,
+      minimumBid: minBid,
+      createdAt: DateTime.now(),
+      listingStatus:
+          _openForBids ? ListingStatus.open : ListingStatus.paused,
+      isAiScanned: true,
+      notes: _notesController.text.trim(),
+    );
+
+    ListingStateService().addListing(newListing);
+
     _showDemoMessage(
-      'Demo mode: Your listing has been prepared locally. It has not been published to a marketplace.',
+      'Listing published! Vendors can now see "${widget.orchardName}" in their dashboard.',
     );
 
     // Return to Grower Dashboard

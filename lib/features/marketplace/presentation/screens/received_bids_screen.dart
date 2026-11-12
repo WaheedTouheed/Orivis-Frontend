@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/bids_state_service.dart';
+import '../../../../core/services/listing_state_service.dart';
+import '../../../../core/services/orders_state_service.dart';
 import '../../../home/presentation/screens/grower_dashboard_screen.dart';
 import '../../../home/presentation/screens/profile_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
@@ -75,6 +77,24 @@ class _ReceivedBidsScreenState extends State<ReceivedBidsScreen> {
             ),
             onPressed: () {
               Navigator.of(context).pop();
+              if (isAccept) {
+                OrdersStateService().reflectAcceptedBid(
+                  bidId: bid.id,
+                  orchardName: 'Kinnow Block A',
+                  amount: bid.amount,
+                  quantity: bid.quantity,
+                  growerName: 'Grower account',
+                );
+                ListingStateService().updateVendorBidStatus(
+                  bid.id,
+                  VendorBidStatus.accepted,
+                );
+              } else {
+                ListingStateService().updateVendorBidStatus(
+                  bid.id,
+                  VendorBidStatus.rejected,
+                );
+              }
               BidsStateService().removeBid(bid.id);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

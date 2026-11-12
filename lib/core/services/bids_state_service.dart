@@ -59,6 +59,18 @@ class BidsStateService extends ChangeNotifier {
 
   int get bidCount => _bids.length;
 
+  void addBid(BidItem bid) {
+    _bids.insert(0, bid);
+    if (_bids.isNotEmpty) {
+      final maxAmount =
+          _bids.map((b) => b.amount).reduce((a, b) => a > b ? a : b);
+      for (var b in _bids) {
+        b.isHighest = (b.amount == maxAmount);
+      }
+    }
+    notifyListeners();
+  }
+
   void removeBid(String id) {
     _bids.removeWhere((b) => b.id == id);
     if (_bids.isNotEmpty) {

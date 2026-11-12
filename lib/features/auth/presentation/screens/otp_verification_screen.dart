@@ -5,6 +5,7 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../../home/presentation/screens/grower_dashboard_screen.dart';
+import '../../../vendor/presentation/screens/vendor_dashboard_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String role; // 'Grower' or 'Vendor'
@@ -81,12 +82,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         (route) => false,
       );
     } else {
+      // Vendor role
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Demo mode: OTP verification is not connected yet.'),
+          content: Text('Demo mode: displaying Vendor Dashboard.'),
           backgroundColor: AppColors.darkGreen,
-          duration: Duration(seconds: 3),
+          duration: Duration(seconds: 2),
         ),
+      );
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => const VendorDashboardScreen(),
+        ),
+        (route) => false,
       );
     }
   }
