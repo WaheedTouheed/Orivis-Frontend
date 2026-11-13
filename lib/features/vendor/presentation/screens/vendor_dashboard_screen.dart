@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/listing_state_service.dart';
+import '../../../../core/services/notifications_state_service.dart';
 import 'vendor_notifications_screen.dart';
+import 'vendor_profile_screen.dart';
 import 'vendor_bid_screen.dart';
 import 'vendor_bids_history_screen.dart';
 import 'vendor_payments_screen.dart';
@@ -335,7 +337,10 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
     final topPadding = MediaQuery.paddingOf(context).top;
 
     return AnimatedBuilder(
-      animation: ListingStateService(),
+      animation: Listenable.merge([
+        ListingStateService(),
+        NotificationsStateService(),
+      ]),
       builder: (context, _) {
         final service = ListingStateService();
         final allListings = service.listings;
@@ -390,51 +395,76 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                   Row(
                                     crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
-                                      // Orange Avatar
-                                      Container(
-                                        height: 50.r,
-                                        width: 50.r,
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFFF99A20),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            'AN',
-                                            style: TextStyle(
-                                              fontSize: 18.sp,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
+                                      // Orange Avatar -> Profile
+                                      InkWell(
+                                        onTap: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const VendorProfileScreen(),
                                             ),
+                                          );
+                                        },
+                                        borderRadius:
+                                            BorderRadius.circular(25.r),
+                                        child: Container(
+                                          height: 50.r,
+                                          width: 50.r,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFF99A20),
+                                            shape: BoxShape.circle,
                                           ),
-                                        ),
-                                      ),
-                                      SizedBox(width: 14.w),
-                                      // Greeting + Name
-                                      Expanded(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Assalam-o-Alaikum',
-                                              style: TextStyle(
-                                                fontSize: 13.sp,
-                                                fontWeight: FontWeight.w400,
-                                                color: const Color(0xFFDCE9E0),
-                                              ),
-                                            ),
-                                            SizedBox(height: 2.h),
-                                            Text(
-                                              'Al-Noor Traders',
+                                          child: Center(
+                                            child: Text(
+                                              'AN',
                                               style: TextStyle(
                                                 fontSize: 18.sp,
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.white,
                                               ),
                                             ),
-                                          ],
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 14.w),
+                                      // Greeting + Name -> Profile
+                                      Expanded(
+                                        child: InkWell(
+                                          onTap: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    const VendorProfileScreen(),
+                                              ),
+                                            );
+                                          },
+                                          borderRadius:
+                                              BorderRadius.circular(8.r),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Assalam-o-Alaikum',
+                                                style: TextStyle(
+                                                  fontSize: 13.sp,
+                                                  fontWeight: FontWeight.w400,
+                                                  color:
+                                                      const Color(0xFFDCE9E0),
+                                                ),
+                                              ),
+                                              SizedBox(height: 2.h),
+                                              Text(
+                                                'Al-Noor Traders',
+                                                style: TextStyle(
+                                                  fontSize: 18.sp,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                       // Notification Bell
@@ -467,30 +497,33 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                                 size: 22.r,
                                                 color: Colors.white,
                                               ),
-                                              Positioned(
-                                                top: 8.r,
-                                                right: 8.r,
-                                                child: Container(
-                                                  height: 15.r,
-                                                  width: 15.r,
-                                                  decoration:
-                                                      const BoxDecoration(
-                                                    color: Color(0xFFF99A20),
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: Center(
-                                                    child: Text(
-                                                      '1',
-                                                      style: TextStyle(
-                                                        fontSize: 9.sp,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.white,
+                                              if (NotificationsStateService()
+                                                      .unreadCount >
+                                                  0)
+                                                Positioned(
+                                                  top: 8.r,
+                                                  right: 8.r,
+                                                  child: Container(
+                                                    height: 15.r,
+                                                    width: 15.r,
+                                                    decoration:
+                                                        const BoxDecoration(
+                                                      color: Color(0xFFF99A20),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: Center(
+                                                      child: Text(
+                                                        '${NotificationsStateService().unreadCount}',
+                                                        style: TextStyle(
+                                                          fontSize: 9.sp,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Colors.white,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
                                             ],
                                           ),
                                         ),

@@ -52,7 +52,23 @@ class OrchardStateService extends ChangeNotifier {
 
   OrchardModel? _selectedOrchard;
 
-  OrchardModel get selectedOrchard => _selectedOrchard ?? orchards.first;
+  OrchardModel get selectedOrchard {
+    if (_selectedOrchard != null && orchards.contains(_selectedOrchard)) {
+      return _selectedOrchard!;
+    }
+    return orchards.isNotEmpty
+        ? orchards.first
+        : OrchardModel(
+            id: '0',
+            name: 'No Orchard',
+            location: '-',
+            variety: '-',
+            area: 0,
+            areaUnit: 'acres',
+            askingPrice: 0,
+            bidCount: 0,
+          );
+  }
 
   void selectOrchard(OrchardModel orchard) {
     _selectedOrchard = orchard;
@@ -62,7 +78,7 @@ class OrchardStateService extends ChangeNotifier {
   void selectOrchardByName(String name) {
     final found = orchards.firstWhere(
       (o) => o.name == name,
-      orElse: () => orchards.first,
+      orElse: () => orchards.isNotEmpty ? orchards.first : selectedOrchard,
     );
     _selectedOrchard = found;
     notifyListeners();
@@ -88,7 +104,7 @@ class OrchardStateService extends ChangeNotifier {
       bidCount: bidCount,
     );
     orchards.add(newOrchard);
-    _selectedOrchard ??= newOrchard;
+    _selectedOrchard = newOrchard;
     notifyListeners();
   }
 
@@ -113,5 +129,13 @@ class OrchardStateService extends ChangeNotifier {
       }
       notifyListeners();
     }
+  }
+
+  void removeOrchard(String id) {
+    orchards.removeWhere((o) => o.id == id);
+    if (_selectedOrchard?.id == id) {
+      _selectedOrchard = orchards.isNotEmpty ? orchards.first : null;
+    }
+    notifyListeners();
   }
 }

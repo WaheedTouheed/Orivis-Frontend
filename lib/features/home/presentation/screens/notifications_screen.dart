@@ -2,32 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/notifications_state_service.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import '../../../scan/presentation/screens/scan_report_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
 import '../../../scan/presentation/screens/scan_history_screen.dart';
 import 'grower_dashboard_screen.dart';
 import 'profile_screen.dart';
-
-class NotificationItem {
-  final String id;
-  final String title;
-  final String description;
-  final String time;
-  final String category; // 'Bids', 'Listings', 'Scans', 'System'
-  final IconData iconData;
-  bool isRead;
-
-  NotificationItem({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.time,
-    required this.category,
-    required this.iconData,
-    this.isRead = false,
-  });
-}
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -48,99 +29,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     'System',
   ];
 
-  final List<NotificationItem> _notifications = [
-    NotificationItem(
-      id: '1',
-      title: 'New bid received!',
-      description:
-          'Al-Noor Traders placed a bid of PKR 182,000 for Kinnow Block A.',
-      time: '5 minutes ago',
-      category: 'Bids',
-      iconData: Icons.handshake_outlined,
-      isRead: false,
-    ),
-    NotificationItem(
-      id: '2',
-      title: 'Bid accepted successfully',
-      description:
-          "You accepted Madni Fruit Co.'s bid of PKR 176,500 for Kinnow Block A.",
-      time: '1 hour ago',
-      category: 'Bids',
-      iconData: Icons.check_circle_outline,
-      isRead: false,
-    ),
-    NotificationItem(
-      id: '3',
-      title: 'Bid rejected',
-      description:
-          "You rejected Shah Agency's bid of PKR 168,000 for Kinnow Block A.",
-      time: '3 hours ago',
-      category: 'Bids',
-      iconData: Icons.cancel_outlined,
-      isRead: true,
-    ),
-    NotificationItem(
-      id: '4',
-      title: 'Buyer withdrew a bid',
-      description: 'A buyer withdrew their PKR 165,000 bid for Kinnow Block A.',
-      time: 'Yesterday',
-      category: 'Bids',
-      iconData: Icons.trending_down_rounded,
-      isRead: true,
-    ),
-    NotificationItem(
-      id: '5',
-      title: 'Your listing is getting attention!',
-      description: 'Kinnow Block A has received 3 bids from buyers.',
-      time: 'Yesterday',
-      category: 'Listings',
-      iconData: Icons.people_outline_rounded,
-      isRead: true,
-    ),
-    NotificationItem(
-      id: '6',
-      title: 'Listing expires soon',
-      description: 'Your Kinnow Block A listing will expire in 2 days.',
-      time: '2 days ago',
-      category: 'Listings',
-      iconData: Icons.access_time_rounded,
-      isRead: true,
-    ),
-    NotificationItem(
-      id: '7',
-      title: 'Orchard scan completed',
-      description: 'Your scan report for Kinnow Block A is ready to view.',
-      time: '2 days ago',
-      category: 'Scans',
-      iconData: Icons.camera_alt_outlined,
-      isRead: true,
-    ),
-    NotificationItem(
-      id: '8',
-      title: 'Marketplace update',
-      description: 'New buyers are now available in your marketplace.',
-      time: '3 days ago',
-      category: 'System',
-      iconData: Icons.notifications_none_outlined,
-      isRead: true,
-    ),
-  ];
-
-  List<NotificationItem> get _filteredNotifications {
-    if (_selectedCategory == 'All') {
-      return _notifications;
-    }
-    return _notifications
-        .where((n) => n.category == _selectedCategory)
-        .toList();
-  }
-
   void _markAllAsRead() {
-    setState(() {
-      for (var n in _notifications) {
-        n.isRead = true;
-      }
-    });
+    NotificationsStateService().markAllAsRead();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('All notifications marked as read.'),
@@ -193,9 +83,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             onPressed: () {
               Navigator.of(context).pop();
-              setState(() {
-                _notifications.clear();
-              });
+              NotificationsStateService().clearAll();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('All notifications cleared.'),
@@ -218,9 +106,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _handleNotificationTap(NotificationItem notification) {
-    setState(() {
-      notification.isRead = true;
-    });
+    NotificationsStateService().markAsRead(notification.id);
 
     if (notification.category == 'Bids' ||
         notification.title.toLowerCase().contains('bid')) {
@@ -301,36 +187,44 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
-    final filtered = _filteredNotifications;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.warmCream,
-        body: Column(
-          children: [
-            // ==========================================
-            // 1. FIXED TOP APP BAR
-            // ==========================================
-            Container(
-              padding: EdgeInsets.only(
-                top: topPadding > 0 ? topPadding + 8.h : 16.h,
-                left: 20.w,
-                right: 20.w,
-                bottom: 12.h,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.warmCream,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
+    return AnimatedBuilder(
+      animation: NotificationsStateService(),
+      builder: (context, child) {
+        final allNotifications = NotificationsStateService().notifications;
+        final filteredNotifications = _selectedCategory == 'All'
+            ? allNotifications
+            : allNotifications
+                .where((n) => n.category == _selectedCategory)
+                .toList();
+
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+          ),
+          child: Scaffold(
+            backgroundColor: AppColors.warmCream,
+            body: Column(
+              children: [
+                // ==========================================
+                // 1. FIXED TOP HEADER BAR
+                // ==========================================
+                Container(
+                  padding: EdgeInsets.only(
+                    top: topPadding > 0 ? topPadding + 8.h : 16.h,
+                    left: 20.w,
+                    right: 20.w,
+                    bottom: 16.h,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: AppColors.warmCream,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Back Button
                       InkWell(
                         onTap: () => Navigator.of(context).pop(),
                         borderRadius: BorderRadius.circular(12.r),
@@ -347,12 +241,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           ),
                           child: Icon(
                             Icons.arrow_back_ios_new_rounded,
-                            size: 20.r,
+                            size: 18.r,
                             color: AppColors.darkGreen,
                           ),
                         ),
                       ),
-                      SizedBox(width: 12.w),
+
+                      // Screen Title
                       Text(
                         'Notifications',
                         style: TextStyle(
@@ -361,201 +256,194 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           color: AppColors.darkGreen,
                         ),
                       ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: _markAllAsRead,
-                        child: Text(
-                          'Mark all read',
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.darkGreen,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: _clearAllNotifications,
-                        icon: Icon(
-                          Icons.delete_outline_rounded,
-                          size: 20.r,
-                          color: AppColors.secondaryText,
-                        ),
-                        tooltip: 'Clear All',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
 
-            // ==========================================
-            // 2. CATEGORY CHIPS FILTER ROW
-            // ==========================================
-            Container(
-              height: 48.h,
-              margin: EdgeInsets.only(bottom: 8.h),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 20.w),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final cat = _categories[index];
-                  final isSelected = _selectedCategory == cat;
-                  return Padding(
-                    padding: EdgeInsets.only(right: 8.w),
-                    child: ChoiceChip(
-                      label: Text(cat),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          _selectedCategory = cat;
-                        });
-                      },
-                      selectedColor: AppColors.darkGreen,
-                      backgroundColor: Colors.white,
-                      labelStyle: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white : AppColors.darkGreen,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                        side: BorderSide(
-                          color: isSelected
-                              ? AppColors.darkGreen
-                              : AppColors.cardBorder,
-                          width: 1.w,
-                        ),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 8.h,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            // ==========================================
-            // 3. NOTIFICATION LIST (OR EMPTY STATE)
-            // ==========================================
-            Expanded(
-              child: filtered.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      // Header Actions (Mark all read & Clear all)
+                      Row(
                         children: [
-                          Container(
-                            height: 64.r,
-                            width: 64.r,
-                            decoration: BoxDecoration(
-                              color: AppColors.lightGreen,
-                              borderRadius: BorderRadius.circular(20.r),
+                          if (NotificationsStateService().unreadCount > 0)
+                            IconButton(
+                              onPressed: _markAllAsRead,
+                              tooltip: 'Mark all as read',
+                              icon: Icon(
+                                Icons.done_all_rounded,
+                                size: 22.r,
+                                color: AppColors.darkGreen,
+                              ),
                             ),
-                            child: Icon(
-                              Icons.notifications_off_outlined,
-                              size: 32.r,
-                              color: AppColors.darkGreen,
+                          if (allNotifications.isNotEmpty)
+                            IconButton(
+                              onPressed: _clearAllNotifications,
+                              tooltip: 'Clear all',
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 22.r,
+                                color: AppColors.errorRed,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 16.h),
-                          Text(
-                            'No notifications found',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryText,
-                            ),
-                          ),
-                          SizedBox(height: 6.h),
-                          Text(
-                            'You have no notifications in "$_selectedCategory".',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              color: AppColors.secondaryText,
-                            ),
-                          ),
                         ],
                       ),
-                    )
-                  : ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20.w,
-                        vertical: 8.h,
-                      ),
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final notification = filtered[index];
-                        return _buildNotificationCard(notification);
-                      },
-                    ),
-            ),
-          ],
-        ),
+                    ],
+                  ),
+                ),
 
-        // ==========================================
-        // 4. FIXED BOTTOM NAVIGATION BAR
-        // ==========================================
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(24.r),
-              topRight: Radius.circular(24.r),
+                // ==========================================
+                // 2. CATEGORY CHIPS SCFilter BAR
+                // ==========================================
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 20.w, vertical: 4.h),
+                  child: Row(
+                    children: _categories.map((cat) {
+                      final isSelected = _selectedCategory == cat;
+                      return Padding(
+                        padding: EdgeInsets.only(right: 8.w),
+                        child: FilterChip(
+                          selected: isSelected,
+                          showCheckmark: false,
+                          label: Text(cat),
+                          labelStyle: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.secondaryText,
+                          ),
+                          backgroundColor: Colors.white,
+                          selectedColor: AppColors.darkGreen,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.r),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppColors.darkGreen
+                                  : AppColors.cardBorder,
+                              width: 1.w,
+                            ),
+                          ),
+                          onSelected: (_) {
+                            setState(() {
+                              _selectedCategory = cat;
+                            });
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                SizedBox(height: 12.h),
+
+                // ==========================================
+                // 3. NOTIFICATIONS LIST / EMPTY STATE
+                // ==========================================
+                Expanded(
+                  child: filteredNotifications.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.notifications_off_outlined,
+                                size: 64.r,
+                                color: AppColors.secondaryText
+                                    .withValues(alpha: 0.5),
+                              ),
+                              SizedBox(height: 16.h),
+                              Text(
+                                'No notifications found',
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryText,
+                                ),
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                'You have no notifications in "$_selectedCategory".',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  color: AppColors.secondaryText,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          physics: const BouncingScrollPhysics(),
+                          padding: EdgeInsets.symmetric(horizontal: 20.w),
+                          itemCount: filteredNotifications.length,
+                          itemBuilder: (context, index) {
+                            final notification = filteredNotifications[index];
+                            return _buildNotificationCard(notification);
+                          },
+                        ),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildBottomNavItem(
-                    index: 0,
-                    iconData: Icons.home_outlined,
-                    activeIconData: Icons.home_rounded,
-                    label: 'Home',
-                  ),
-                  _buildBottomNavItem(
-                    index: 1,
-                    iconData: Icons.access_time_outlined,
-                    activeIconData: Icons.access_time_filled_rounded,
-                    label: 'History',
-                  ),
-                  // Center Elevated Scan Action
-                  _buildCenterScanNavItem(),
-                  _buildBottomNavItem(
-                    index: 3,
-                    iconData: Icons.local_offer_outlined,
-                    activeIconData: Icons.local_offer_rounded,
-                    label: 'Bids',
-                  ),
-                  _buildBottomNavItem(
-                    index: 4,
-                    iconData: Icons.person_outline_rounded,
-                    activeIconData: Icons.person_rounded,
-                    label: 'Profile',
+
+            // ==========================================
+            // 4. FIXED BOTTOM NAVIGATION BAR
+            // ==========================================
+            bottomNavigationBar: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24.r),
+                  topRight: Radius.circular(24.r),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildBottomNavItem(
+                        index: 0,
+                        iconData: Icons.home_outlined,
+                        activeIconData: Icons.home_rounded,
+                        label: 'Home',
+                      ),
+                      _buildBottomNavItem(
+                        index: 1,
+                        iconData: Icons.access_time_outlined,
+                        activeIconData: Icons.access_time_filled_rounded,
+                        label: 'History',
+                      ),
+                      // Center Elevated Scan Action
+                      _buildCenterScanNavItem(),
+                      _buildBottomNavItem(
+                        index: 3,
+                        iconData: Icons.local_offer_outlined,
+                        activeIconData: Icons.local_offer_rounded,
+                        label: 'Bids',
+                      ),
+                      _buildBottomNavItem(
+                        index: 4,
+                        iconData: Icons.person_outline_rounded,
+                        activeIconData: Icons.person_rounded,
+                        label: 'Profile',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -563,133 +451,96 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       decoration: BoxDecoration(
-        color: notification.isRead ? Colors.white : const Color(0xFFF7FBF8),
+        color: notification.isRead ? Colors.white : const Color(0xFFF4FAF5),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
           color: notification.isRead
               ? AppColors.cardBorder
-              : AppColors.darkGreen.withValues(alpha: 0.25),
-          width: notification.isRead ? 1.w : 1.5.w,
+              : AppColors.darkGreen.withValues(alpha: 0.3),
+          width: 1.w,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
-      child: Material(
-        color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _handleNotificationTap(notification),
         borderRadius: BorderRadius.circular(16.r),
-        child: InkWell(
-          onTap: () => _handleNotificationTap(notification),
-          borderRadius: BorderRadius.circular(16.r),
-          child: Padding(
-            padding: EdgeInsets.all(14.w),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Left Icon Container
-                Container(
-                  height: 42.r,
-                  width: 42.r,
-                  decoration: BoxDecoration(
-                    color: AppColors.lightGreen,
-                    borderRadius: BorderRadius.circular(14.r),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      notification.iconData,
-                      size: 20.r,
-                      color: AppColors.darkGreen,
-                    ),
-                  ),
+        child: Padding(
+          padding: EdgeInsets.all(14.w),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon Badge
+              Container(
+                height: 40.r,
+                width: 40.r,
+                decoration: BoxDecoration(
+                  color: notification.isRead
+                      ? AppColors.darkGreen.withValues(alpha: 0.1)
+                      : AppColors.darkGreen,
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                SizedBox(width: 12.w),
+                child: Icon(
+                  notification.iconData,
+                  size: 20.r,
+                  color: notification.isRead
+                      ? AppColors.darkGreen
+                      : Colors.white,
+                ),
+              ),
 
-                // Content Column
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              notification.title,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: notification.isRead
-                                    ? FontWeight.w600
-                                    : FontWeight.w800,
-                                color: AppColors.primaryText,
-                              ),
-                            ),
-                          ),
-                          if (!notification.isRead)
-                            Container(
-                              height: 8.r,
-                              width: 8.r,
-                              margin: EdgeInsets.only(left: 8.w, top: 4.h),
-                              decoration: const BoxDecoration(
-                                color: AppColors.darkGreen,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                        ],
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        notification.description,
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          color: AppColors.secondaryText,
-                          height: 1.35,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            notification.time,
+              SizedBox(width: 12.w),
+
+              // Title, Description & Time
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notification.title,
                             style: TextStyle(
-                              fontSize: 11.sp,
-                              color: AppColors.placeholderColor,
+                              fontSize: 14.sp,
+                              fontWeight: notification.isRead
+                                  ? FontWeight.w600
+                                  : FontWeight.bold,
+                              color: AppColors.primaryText,
                             ),
                           ),
+                        ),
+                        if (!notification.isRead)
                           Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 8.w,
-                              vertical: 2.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.warmCream,
-                              borderRadius: BorderRadius.circular(6.r),
-                              border: Border.all(
-                                color: AppColors.cardBorder,
-                                width: 0.8.w,
-                              ),
-                            ),
-                            child: Text(
-                              notification.category,
-                              style: TextStyle(
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.secondaryText,
-                              ),
+                            height: 8.r,
+                            width: 8.r,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF99A20),
+                              shape: BoxShape.circle,
                             ),
                           ),
-                        ],
+                      ],
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      notification.description,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: AppColors.secondaryText,
+                        height: 1.3,
                       ),
-                    ],
-                  ),
+                    ),
+                    SizedBox(height: 6.h),
+                    Text(
+                      notification.time,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: AppColors.secondaryText.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -732,13 +583,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           );
         } else {
-          setState(() => _selectedBottomIndex = index);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Demo mode: $label tab is not connected yet.'),
-              duration: const Duration(seconds: 1),
-            ),
-          );
+          setState(() {
+            _selectedBottomIndex = index;
+          });
         }
       },
       borderRadius: BorderRadius.circular(14.r),
@@ -754,7 +601,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Icon(
               isSelected ? activeIconData : iconData,
               size: 22.r,
-              color: isSelected ? AppColors.darkGreen : AppColors.secondaryText,
+              color:
+                  isSelected ? AppColors.darkGreen : AppColors.secondaryText,
             ),
             SizedBox(height: 2.h),
             Text(
@@ -762,9 +610,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               style: TextStyle(
                 fontSize: 11.sp,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected
-                    ? AppColors.darkGreen
-                    : AppColors.secondaryText,
+                color:
+                    isSelected ? AppColors.darkGreen : AppColors.secondaryText,
               ),
             ),
           ],
@@ -786,7 +633,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
         decoration: BoxDecoration(
-          color: const Color(0xFFF99A20),
+          color: const Color(0xFFF99A20), // Prominent Orange (#F99A20)
           borderRadius: BorderRadius.circular(18.r),
           boxShadow: [
             BoxShadow(

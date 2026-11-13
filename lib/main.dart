@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'core/services/supabase_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
 
@@ -13,6 +14,9 @@ void main() async {
   } catch (e) {
     debugPrint("Could not load .env file: $e");
   }
+
+  // Initialize Supabase Client
+  await SupabaseService().initialize();
 
   runApp(const MyApp());
 }

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BidItem {
   final String id;
@@ -18,14 +20,41 @@ class BidItem {
     required this.status,
     this.isHighest = false,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'companyName': companyName,
+      'initials': initials,
+      'quantity': quantity,
+      'amount': amount,
+      'status': status,
+      'isHighest': isHighest,
+    };
+  }
+
+  factory BidItem.fromJson(Map<String, dynamic> json) {
+    return BidItem(
+      id: json['id'] ?? '',
+      companyName: json['companyName'] ?? '',
+      initials: json['initials'] ?? 'AT',
+      quantity: json['quantity'] ?? '0 tons',
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      status: json['status'] ?? 'Pending',
+      isHighest: json['isHighest'] ?? false,
+    );
+  }
 }
 
 class BidsStateService extends ChangeNotifier {
   static final BidsStateService _instance = BidsStateService._internal();
   factory BidsStateService() => _instance;
-  BidsStateService._internal();
 
-  final List<BidItem> _bids = [
+  BidsStateService._internal() {
+    loadSavedState();
+  }
+
+  List<BidItem> _bids = [
     BidItem(
       id: '1',
       companyName: 'Al-Noor Traders',
@@ -55,9 +84,47 @@ class BidsStateService extends ChangeNotifier {
     ),
   ];
 
+  bool _isLoaded = false;
+
   List<BidItem> get bids => List.unmodifiable(_bids);
 
   int get bidCount => _bids.length;
+
+  Future<void> loadSavedState() async {
+    if (_isLoaded) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? bidsJson = prefs.getString('orivis_bids_state');
+      final bool? isCleared = prefs.getBool('orivis_bids_cleared');
+
+      if (isCleared == true) {
+        _bids = [];
+      } else if (bidsJson != null) {
+        final List<dynamic> decoded = jsonDecode(bidsJson);
+        _bids = decoded.map((item) => BidItem.fromJson(item)).toList();
+      }
+      _isLoaded = true;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading bids state: $e');
+    }
+  }
+
+  Future<void> _saveToStorage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (_bids.isEmpty) {
+        await prefs.setBool('orivis_bids_cleared', true);
+        await prefs.setString('orivis_bids_state', jsonEncode([]));
+      } else {
+        await prefs.setBool('orivis_bids_cleared', false);
+        final encoded = jsonEncode(_bids.map((b) => b.toJson()).toList());
+        await prefs.setString('orivis_bids_state', encoded);
+      }
+    } catch (e) {
+      debugPrint('Error saving bids state: $e');
+    }
+  }
 
   void addBid(BidItem bid) {
     _bids.insert(0, bid);
@@ -68,6 +135,7 @@ class BidsStateService extends ChangeNotifier {
         b.isHighest = (b.amount == maxAmount);
       }
     }
+    _saveToStorage();
     notifyListeners();
   }
 
@@ -80,6 +148,7 @@ class BidsStateService extends ChangeNotifier {
         b.isHighest = (b.amount == maxAmount);
       }
     }
+    _saveToStorage();
     notifyListeners();
   }
 }

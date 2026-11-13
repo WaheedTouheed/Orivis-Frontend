@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/bids_state_service.dart';
 import '../../../../core/services/listing_state_service.dart';
+import '../../../../core/services/notifications_state_service.dart';
 
 class VendorBidScreen extends StatefulWidget {
   final ListingModel listing;
@@ -121,6 +122,18 @@ class _VendorBidScreenState extends State<VendorBidScreen> {
         quantity: '${(widget.listing.estimatedFruitCount / 300).toStringAsFixed(1)} tons',
         amount: bidAmount,
         status: 'Pending',
+      ),
+    );
+    NotificationsStateService().addNotification(
+      NotificationItem(
+        id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'New bid received!',
+        description:
+            'Al-Noor Traders placed a bid of PKR ${_formatAmount(bidAmount)} for ${widget.listing.orchardName}.',
+        time: 'Just now',
+        category: 'Bids',
+        iconData: Icons.handshake_outlined,
+        isRead: false,
       ),
     );
 

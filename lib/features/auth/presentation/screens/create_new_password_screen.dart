@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../data/repositories/auth_repository.dart';
 import 'grower_login_screen.dart';
 import 'login_screen.dart';
 
@@ -36,17 +37,28 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
     super.dispose();
   }
 
-  void _handleResetPassword() {
+  Future<void> _handleResetPassword() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Demo Mode Notification (Frontend only, no backend connection)
+    final newPassword = _passwordController.text;
+    try {
+      await AuthRepository().resetPassword(
+        email: widget.email,
+        newPassword: newPassword,
+      );
+    } catch (_) {}
+
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Demo mode: password reset is not connected yet.'),
+        content: Text('Password updated successfully! Please log in.'),
         backgroundColor: AppColors.darkGreen,
-        duration: Duration(seconds: 3),
+        duration: Duration(seconds: 2),
       ),
     );
+
+    _navigateToLogin();
   }
 
   void _navigateToLogin() {

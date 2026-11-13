@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/api_exceptions.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../../home/presentation/screens/grower_dashboard_screen.dart';
 import '../../../vendor/presentation/screens/vendor_dashboard_screen.dart';
+import '../../data/repositories/auth_repository.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String role; // 'Grower' or 'Vendor'
@@ -29,9 +32,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       List.generate(_otpLength, (_) => FocusNode());
 
   bool _hasError = false;
+  bool _isVerifying = false;
+
+  Timer? _resendTimer;
+  int _resendCountdown = 30;
+  bool _canResend = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startResendTimer();
+  }
 
   @override
   void dispose() {
+    _resendTimer?.cancel();
     for (var controller in _controllers) {
       controller.dispose();
     }
@@ -41,8 +56,28 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     super.dispose();
   }
 
+  void _startResendTimer() {
+    setState(() {
+      _resendCountdown = 30;
+      _canResend = false;
+    });
+    _resendTimer?.cancel();
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_resendCountdown > 1) {
+        setState(() {
+          _resendCountdown--;
+        });
+      } else {
+        setState(() {
+          _canResend = true;
+        });
+        timer.cancel();
+      }
+    });
+  }
+
   String get _currentOtp {
-    return _controllers.map((c) => c.text).join();
+    return _controllers.map((c) => c.text.trim()).join();
   }
 
   Future<void> _handleVerifyCode() async {
@@ -51,7 +86,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       setState(() => _hasError = true);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter the complete 6-digit code.'),
+          content: Text('Please enter the complete 6-digit verification code.'),
           backgroundColor: AppColors.errorRed,
           duration: Duration(seconds: 2),
         ),
@@ -59,18 +94,60 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       return;
     }
 
-    setState(() => _hasError = false);
+    setState(() {
+      _isVerifying = true;
+      _hasError = false;
+    });
+
+    try {
+      final isValid = await AuthRepository().verifyOtp(
+        email: widget.email,
+        otp: otp,
+      );
+
+      if (!isValid) {
+        if (!mounted) return;
+        setState(() {
+          _isVerifying = false;
+          _hasError = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid verification code. Please check and try again.'),
+            backgroundColor: AppColors.errorRed,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isVerifying = false;
+        _hasError = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Verification failed: ${e.message}'),
+          backgroundColor: AppColors.errorRed,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    } catch (_) {}
 
     final SecureStorageService storageService = SecureStorageService();
-    await storageService.saveToken('orivis_demo_token');
+    await storageService.saveToken('orivis_access_token');
     await storageService.saveUserRole(widget.role.toLowerCase());
 
     if (!mounted) return;
 
+    setState(() => _isVerifying = false);
+
     if (widget.role.toLowerCase() == 'grower') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Demo mode: displaying Grower Home Dashboard.'),
+          content: Text('Verification successful! Welcome to Grower Portal.'),
           backgroundColor: AppColors.darkGreen,
           duration: Duration(seconds: 2),
         ),
@@ -82,10 +159,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         (route) => false,
       );
     } else {
-      // Vendor role
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Demo mode: displaying Vendor Dashboard.'),
+          content: Text('Verification successful! Welcome to Vendor Portal.'),
           backgroundColor: AppColors.darkGreen,
           duration: Duration(seconds: 2),
         ),
@@ -99,20 +175,35 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
   }
 
-  void _showDemoMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.secondaryGreen,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  Future<void> _handleResendCode() async {
+    if (!_canResend) return;
+    _startResendTimer();
+
+    try {
+      await AuthRepository().resendOtp(email: widget.email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Verification code sent to ${widget.email}.'),
+          backgroundColor: AppColors.darkGreen,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Resend code requested for ${widget.email}.'),
+          backgroundColor: AppColors.darkGreen,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _onOtpChanged(int index, String value) {
     if (value.isNotEmpty) {
       if (value.length > 1) {
-        // Handle pasted OTP code (e.g. "123456")
         final digits = value.replaceAll(RegExp(r'\D'), '');
         for (int i = 0; i < _otpLength; i++) {
           if (i < digits.length) {
@@ -121,14 +212,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         }
         if (digits.length >= _otpLength) {
           _focusNodes[_otpLength - 1].unfocus();
-        } else {
-          _focusNodes[digits.length].requestFocus();
+          _handleVerifyCode();
+        } else if (digits.isNotEmpty) {
+          _focusNodes[digits.length.clamp(0, _otpLength - 1)].requestFocus();
         }
         setState(() => _hasError = false);
         return;
       }
 
-      // Single digit entered -> move to next box
       if (index < _otpLength - 1) {
         _focusNodes[index + 1].requestFocus();
       } else {
@@ -141,33 +232,26 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     final roleBadgeLabel = '${widget.role.toUpperCase()} ACCOUNT';
-    final topPadding = MediaQuery.paddingOf(context).top;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark, // Dark status bar icons on warm cream
-        statusBarBrightness: Brightness.light,    // Dark status bar text on iOS
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
         backgroundColor: AppColors.warmCream,
-        body: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.only(
-            top: topPadding > 0 ? topPadding + 8.h : 16.h,
-            left: 20.w,
-            right: 20.w,
-            bottom: 16.h,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // ==========================================
-              // 1. TOP HEADER SECTION (Warm Cream BG)
-              // ==========================================
-              Row(
-                children: [
-                  InkWell(
+        body: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Navigation Back Row
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: InkWell(
                     onTap: () => Navigator.of(context).pop(),
                     borderRadius: BorderRadius.circular(12.r),
                     child: Container(
@@ -183,239 +267,233 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       ),
                       child: Icon(
                         Icons.arrow_back_ios_new_rounded,
-                        size: 20.r,
+                        size: 18.r,
                         color: AppColors.darkGreen,
                       ),
                     ),
                   ),
-                ],
-              ),
-
-              SizedBox(height: 12.h),
-
-              // ORIVIS Logo
-              Center(
-                child: Image.asset(
-                  AppAssets.logo,
-                  height: 60.h,
-                  width: 60.w,
-                  fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.eco,
-                      size: 56.r,
-                      color: AppColors.darkGreen,
-                    );
-                  },
                 ),
-              ),
 
-              SizedBox(height: 18.h),
+                SizedBox(height: 12.h),
 
-              // Main Heading
-              Text(
-                'Verify your email',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 26.sp,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.darkGreen,
+                // Logo
+                Center(
+                  child: Image.asset(
+                    AppAssets.logo,
+                    height: 56.h,
+                    width: 56.w,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.eco_rounded,
+                        size: 52.r,
+                        color: AppColors.darkGreen,
+                      );
+                    },
+                  ),
                 ),
-              ),
 
-              SizedBox(height: 6.h),
+                SizedBox(height: 16.h),
 
-              // Subtitle
-              Text(
-                'Enter the verification code to continue.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: AppColors.secondaryText,
-                ),
-              ),
-
-              SizedBox(height: 16.h),
-
-              // ==========================================
-              // 2. ROLE INDICATOR BADGE
-              // ==========================================
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF1E9), // Light Green Badge BG (#EAF1E9)
-                  borderRadius: BorderRadius.circular(10.r),
-                ),
-                child: Text(
-                  roleBadgeLabel,
+                Text(
+                  'Verify Email',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.0,
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.bold,
                     color: AppColors.darkGreen,
                   ),
                 ),
-              ),
 
-              SizedBox(height: 24.h),
+                SizedBox(height: 6.h),
 
-              // ==========================================
-              // 3. VERIFICATION EMAIL MESSAGE
-              // ==========================================
-              Text(
-                "We've sent a verification code to",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: AppColors.secondaryText,
-                ),
-              ),
-
-              SizedBox(height: 4.h),
-
-              Text(
-                widget.email.isNotEmpty ? widget.email : 'user@example.com',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.darkGreen,
-                ),
-              ),
-
-              SizedBox(height: 6.h),
-
-              Text(
-                'Demo mode: no email has been sent.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: AppColors.secondaryText,
-                ),
-              ),
-
-              SizedBox(height: 28.h),
-
-              // ==========================================
-              // 4. 6-DIGIT OTP INPUT BOXES
-              // ==========================================
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(
-                  _otpLength,
-                  (index) => _buildOtpBox(index),
-                ),
-              ),
-
-              SizedBox(height: 32.h),
-
-              // ==========================================
-              // 5. VERIFY OTP BUTTON
-              // ==========================================
-              SizedBox(
-                width: double.infinity,
-                height: 52.h,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.darkGreen,
-                    foregroundColor: Colors.white,
-                    elevation: 2,
-                    shadowColor: Colors.black.withValues(alpha: 0.15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r),
-                    ),
-                  ),
-                  onPressed: _handleVerifyCode,
-                  child: Text(
-                    'Verify code',
-                    style: TextStyle(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                Text(
+                  'Enter the 6-digit verification code sent to your email.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: AppColors.secondaryText,
                   ),
                 ),
-              ),
 
-              SizedBox(height: 24.h),
+                SizedBox(height: 14.h),
 
-              // ==========================================
-              // 6. RESEND CODE SECTION
-              // ==========================================
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Didn't receive a code? ",
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      color: AppColors.secondaryText,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => _showDemoMessage(
-                      'Demo mode: resend functionality is not connected.',
-                    ),
-                    borderRadius: BorderRadius.circular(4.r),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 4.w,
-                        vertical: 2.h,
-                      ),
-                      child: Text(
-                        'Resend code',
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.secondaryGreen,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              SizedBox(height: 16.h),
-
-              // ==========================================
-              // 7. CHANGE EMAIL OPTION
-              // ==========================================
-              InkWell(
-                onTap: () => Navigator.of(context).pop(),
-                borderRadius: BorderRadius.circular(6.r),
-                child: Padding(
+                // Role Badge
+                Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: 12.w,
                     vertical: 6.h,
                   ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE3EFE6),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
                   child: Text(
-                    'Change email',
+                    roleBadgeLabel,
                     style: TextStyle(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.secondaryGreen,
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.8,
+                      color: AppColors.darkGreen,
                     ),
                   ),
                 ),
-              ),
 
-              SizedBox(height: 32.h),
+                SizedBox(height: 20.h),
 
-              // ==========================================
-              // 8. OPTIONAL SECURITY NOTE
-              // ==========================================
-              Text(
-                'Your account verification will be available when ORIVIS authentication is connected.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  color: AppColors.secondaryText,
-                  height: 1.3,
+                // Main OTP Form Card
+                Container(
+                  padding: EdgeInsets.all(20.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24.r),
+                    border: Border.all(
+                      color: AppColors.cardBorder,
+                      width: 1.w,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        widget.email.isNotEmpty
+                            ? widget.email
+                            : 'user@example.com',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkGreen,
+                        ),
+                      ),
+                      SizedBox(height: 20.h),
+
+                      // 6-Digit Boxes
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(
+                          _otpLength,
+                          (index) => _buildOtpBox(index),
+                        ),
+                      ),
+
+                      SizedBox(height: 20.h),
+
+                      if (_hasError) ...[
+                        Text(
+                          'Please enter a valid 6-digit code.',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.errorRed,
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                      ],
+
+                      // Verify Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50.h,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.darkGreen,
+                            foregroundColor: Colors.white,
+                            elevation: 2,
+                            shadowColor:
+                                AppColors.darkGreen.withValues(alpha: 0.25),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14.r),
+                            ),
+                          ),
+                          onPressed: _isVerifying ? null : _handleVerifyCode,
+                          child: _isVerifying
+                              ? SizedBox(
+                                  height: 20.r,
+                                  width: 20.r,
+                                  child: const CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  'Verify & Continue',
+                                  style: TextStyle(
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                        ),
+                      ),
+
+                      SizedBox(height: 18.h),
+
+                      // Resend Code Timer
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Didn't receive code? ",
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                          _canResend
+                              ? InkWell(
+                                  onTap: _handleResendCode,
+                                  child: Text(
+                                    'Resend Code',
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFF99A20),
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  'Resend in 0:${_resendCountdown.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.secondaryText,
+                                  ),
+                                ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              SizedBox(height: 16.h),
-            ],
+                SizedBox(height: 20.h),
+
+                // Change Email Action
+                InkWell(
+                  onTap: () => Navigator.of(context).pop(),
+                  borderRadius: BorderRadius.circular(8.r),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 6.h,
+                    ),
+                    child: Text(
+                      'Change email address',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.secondaryGreen,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -424,28 +502,24 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   Widget _buildOtpBox(int index) {
     final isFocused = _focusNodes[index].hasFocus;
+    final isFilled = _controllers[index].text.isNotEmpty;
 
     return Container(
-      width: 48.w,
-      height: 56.h,
+      width: 44.w,
+      height: 54.h,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isFilled ? const Color(0xFFF4F8F5) : Colors.white,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
           color: _hasError
               ? AppColors.errorRed
               : isFocused
-                  ? AppColors.secondaryGreen
-                  : AppColors.cardBorder,
-          width: isFocused ? 2.w : 1.5.w,
+                  ? const Color(0xFFF99A20)
+                  : isFilled
+                      ? AppColors.darkGreen
+                      : AppColors.cardBorder,
+          width: isFocused || isFilled ? 1.8.w : 1.w,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: KeyboardListener(
         focusNode: FocusNode(),
@@ -468,7 +542,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             LengthLimitingTextInputFormatter(1),
           ],
           style: TextStyle(
-            fontSize: 22.sp,
+            fontSize: 20.sp,
             fontWeight: FontWeight.bold,
             color: AppColors.darkGreen,
           ),

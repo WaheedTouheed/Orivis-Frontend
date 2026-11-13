@@ -342,26 +342,111 @@ class _MyOrchardsScreenState extends State<MyOrchardsScreen> {
                     ],
                   ),
                 ),
-                InkWell(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => EditOrchardScreen(orchard: orchard),
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(8.r),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                    child: Text(
-                      'Edit',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.darkGreen,
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => EditOrchardScreen(orchard: orchard),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(8.r),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                        child: Text(
+                          'Edit',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.darkGreen,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    SizedBox(width: 8.w),
+                    InkWell(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.r),
+                            ),
+                            backgroundColor: Colors.white,
+                            title: Text(
+                              'Delete Orchard?',
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.darkGreen,
+                              ),
+                            ),
+                            content: Text(
+                              'Are you sure you want to delete ${orchard.name}? This will remove its associated scan records.',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: AppColors.secondaryText,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                child: Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    color: AppColors.secondaryText,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.errorRed,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10.r),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.of(ctx).pop();
+                                  OrchardStateService().removeOrchard(orchard.id);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('${orchard.name} deleted.'),
+                                      backgroundColor: AppColors.errorRed,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'Delete',
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(8.r),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                        child: Text(
+                          'Delete',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.errorRed,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

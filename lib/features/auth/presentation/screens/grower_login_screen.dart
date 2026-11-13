@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../data/repositories/auth_repository.dart';
 import 'forgot_password_screen.dart';
 import 'grower_create_account_screen.dart';
 import 'otp_verification_screen.dart';
@@ -20,6 +21,7 @@ class _GrowerLoginScreenState extends State<GrowerLoginScreen> {
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -28,18 +30,43 @@ class _GrowerLoginScreenState extends State<GrowerLoginScreen> {
     super.dispose();
   }
 
-  void _handleSignIn() {
+  Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Navigate to OtpVerificationScreen passing Grower role & entered email
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => OtpVerificationScreen(
-          role: 'Grower',
-          email: _emailController.text.trim(),
+    setState(() => _isLoading = true);
+
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
+      await AuthRepository().login(
+        email: email,
+        password: password,
+        role: 'grower',
+      );
+
+      if (!mounted) return;
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OtpVerificationScreen(
+            role: 'Grower',
+            email: email,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login failed: ${e.toString()}'),
+          backgroundColor: AppColors.errorRed,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _navigateToForgotPassword() {
@@ -442,15 +469,24 @@ class _GrowerLoginScreenState extends State<GrowerLoginScreen> {
                                       borderRadius: BorderRadius.circular(14.r),
                                     ),
                                   ),
-                                  onPressed: _handleSignIn,
-                                  child: Text(
-                                    'Sign in',
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                  onPressed: _isLoading ? null : _handleSignIn,
+                                  child: _isLoading
+                                      ? SizedBox(
+                                          height: 20.r,
+                                          width: 20.r,
+                                          child: const CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : Text(
+                                          'Sign in',
+                                          style: TextStyle(
+                                            fontSize: 15.sp,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
 

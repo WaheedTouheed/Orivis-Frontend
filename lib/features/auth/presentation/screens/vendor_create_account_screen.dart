@@ -4,6 +4,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
 
+import '../../data/repositories/auth_repository.dart';
+import 'otp_verification_screen.dart';
+
 class VendorCreateAccountScreen extends StatefulWidget {
   const VendorCreateAccountScreen({super.key});
 
@@ -27,6 +30,7 @@ class _VendorCreateAccountScreenState
   bool _obscureConfirmPassword = true;
   bool _agreedToTerms = false;
   bool _showTermsError = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -40,7 +44,7 @@ class _VendorCreateAccountScreenState
     super.dispose();
   }
 
-  void _handleCreateAccount() {
+  Future<void> _handleCreateAccount() async {
     setState(() {
       _showTermsError = !_agreedToTerms;
     });
@@ -62,14 +66,56 @@ class _VendorCreateAccountScreenState
       return;
     }
 
-    // Demo Mode Notification (Frontend only, no API/DB connection)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Demo mode: vendor registration is not connected yet.'),
-        backgroundColor: AppColors.darkGreen,
-        duration: Duration(seconds: 3),
-      ),
-    );
+    setState(() => _isLoading = true);
+
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      final fullName = _fullNameController.text.trim();
+      final businessName = _businessNameController.text.trim();
+      final phone = _phoneController.text.trim();
+      final location = _locationController.text.trim();
+
+      await AuthRepository().signUp(
+        email: email,
+        password: password,
+        fullName: fullName,
+        businessName: businessName,
+        phone: phone,
+        location: location,
+        role: 'vendor',
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vendor account registered successfully!'),
+          backgroundColor: AppColors.darkGreen,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OtpVerificationScreen(
+            role: 'Vendor',
+            email: email,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Registration failed: ${e.toString()}'),
+          backgroundColor: AppColors.errorRed,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _showDemoMessage(String message) {
@@ -562,15 +608,25 @@ class _VendorCreateAccountScreenState
                                       borderRadius: BorderRadius.circular(14.r),
                                     ),
                                   ),
-                                  onPressed: _handleCreateAccount,
-                                  child: Text(
-                                    'Create account',
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                  onPressed:
+                                      _isLoading ? null : _handleCreateAccount,
+                                  child: _isLoading
+                                      ? SizedBox(
+                                          height: 20.r,
+                                          width: 20.r,
+                                          child: const CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : Text(
+                                          'Create account',
+                                          style: TextStyle(
+                                            fontSize: 15.sp,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
 

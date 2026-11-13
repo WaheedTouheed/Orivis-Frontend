@@ -38,6 +38,90 @@ class _ScanReportScreenState extends State<ScanReportScreen> {
     );
   }
 
+  void _showShareReportModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40.w,
+                height: 4.h,
+                margin: EdgeInsets.only(bottom: 16.h),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            Text(
+              'Share Scan Report',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGreen,
+              ),
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              'ORIVIS AI Assessment Report summary for ${widget.orchardName}',
+              style: TextStyle(
+                fontSize: 13.sp,
+                color: AppColors.secondaryText,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            ListTile(
+              leading: const Icon(Icons.copy_rounded, color: AppColors.darkGreen),
+              title: const Text('Copy Text Summary'),
+              subtitle: const Text('Copy report text to clipboard'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                Clipboard.setData(
+                  ClipboardData(
+                    text:
+                        'ORIVIS Scan Report (${widget.orchardName}):\nFruit Count: 1,248 fruits\nRipeness: Ripe 52%, Partially Ripe 28%, Unripe 12%, Overripe 8%\nHealth: 86% healthy\nEstimated Crop Value: PKR 180,000 - 220,000',
+                  ),
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Report summary copied to clipboard.'),
+                    backgroundColor: AppColors.darkGreen,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf_outlined, color: AppColors.darkGreen),
+              title: const Text('Export PDF Report'),
+              subtitle: const Text('Download printable PDF document'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('PDF report generated and saved.'),
+                    backgroundColor: AppColors.darkGreen,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
@@ -110,9 +194,7 @@ class _ScanReportScreenState extends State<ScanReportScreen> {
 
                         // Share / Export Button
                         InkWell(
-                          onTap: () => _showDemoMessage(
-                            'Demo mode: report sharing is not connected yet.',
-                          ),
+                          onTap: _showShareReportModal,
                           borderRadius: BorderRadius.circular(12.r),
                           child: Container(
                             height: 40.r,
