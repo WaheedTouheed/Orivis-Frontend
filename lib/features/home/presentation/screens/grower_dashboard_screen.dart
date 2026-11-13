@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/bids_state_service.dart';
+import '../../../../core/services/notifications_state_service.dart';
 import '../../../../core/services/orchard_state_service.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
 import '../../../scan/presentation/screens/scan_history_screen.dart';
+import '../../../scan/presentation/screens/scan_report_screen.dart';
 import 'add_orchard_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
@@ -76,8 +78,13 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
     final topPadding = MediaQuery.paddingOf(context).top;
 
     return AnimatedBuilder(
-      animation: Listenable.merge([OrchardStateService(), BidsStateService()]),
+      animation: Listenable.merge([
+        OrchardStateService(),
+        BidsStateService(),
+        NotificationsStateService(),
+      ]),
       builder: (context, child) {
+        final unreadNotifications = NotificationsStateService().unreadCount;
         final selectedOrchard = OrchardStateService().selectedOrchard;
         final currentData =
             _orchardData[selectedOrchard.name] ?? _orchardData['Kinnow Block A']!;
@@ -216,28 +223,29 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                                         size: 22.r,
                                         color: Colors.white,
                                       ),
-                                      Positioned(
-                                        top: 8.r,
-                                        right: 8.r,
-                                        child: Container(
-                                          height: 14.r,
-                                          width: 14.r,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFFF99A20),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              '3',
-                                              style: TextStyle(
-                                                fontSize: 9.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
+                                      if (unreadNotifications > 0)
+                                        Positioned(
+                                          top: 8.r,
+                                          right: 8.r,
+                                          child: Container(
+                                            height: 14.r,
+                                            width: 14.r,
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFFF99A20),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                '$unreadNotifications',
+                                                style: TextStyle(
+                                                  fontSize: 9.sp,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
                                               ),
                                             ),
                                           ),
                                         ),
-                                      ),
                                     ],
                                   ),
                                 ),
@@ -615,9 +623,15 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                                       ),
                                     ),
                                     InkWell(
-                                      onTap: () => _showDemoMessage(
-                                        'Demo mode: full report is not connected yet.',
-                                      ),
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => ScanReportScreen(
+                                              orchardName: selectedOrchard.name,
+                                            ),
+                                          ),
+                                        );
+                                      },
                                       child: Text(
                                         'Full report',
                                         style: TextStyle(

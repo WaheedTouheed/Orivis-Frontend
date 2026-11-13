@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/listing_state_service.dart';
+import '../../../../core/services/notifications_state_service.dart';
 import '../../../home/presentation/screens/grower_dashboard_screen.dart';
 import '../../../home/presentation/screens/profile_screen.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
@@ -99,6 +100,19 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     );
 
     ListingStateService().addListing(newListing);
+
+    NotificationsStateService().addNotification(
+      NotificationItem(
+        id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'Listing Published!',
+        description:
+            'Your listing for "${widget.orchardName}" is now live on the marketplace.',
+        time: 'Just now',
+        category: 'Listings',
+        iconData: Icons.storefront_outlined,
+        isRead: false,
+      ),
+    );
 
     _showDemoMessage(
       'Listing published! Vendors can now see "${widget.orchardName}" in their dashboard.',

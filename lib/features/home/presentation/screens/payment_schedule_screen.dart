@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/payments_state_service.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
 import 'grower_dashboard_screen.dart';
@@ -15,6 +16,14 @@ class PaymentScheduleScreen extends StatefulWidget {
 
 class _PaymentScheduleScreenState extends State<PaymentScheduleScreen> {
   int _selectedBottomIndex = 4; // Profile tab
+
+  String _formatAmount(double amount) {
+    final regex = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+    return amount.toStringAsFixed(0).replaceAllMapped(
+          regex,
+          (match) => '${match[1]},',
+        );
+  }
 
   void _showSendReminderDialog() {
     showDialog(
@@ -87,133 +96,158 @@ class _PaymentScheduleScreenState extends State<PaymentScheduleScreen> {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.warmCream,
-        body: Column(
-          children: [
-            // ==========================================
-            // 1. FIXED TOP APP BAR
-            // ==========================================
-            Container(
-              padding: EdgeInsets.only(
-                top: topPadding > 0 ? topPadding + 8.h : 16.h,
-                left: 20.w,
-                right: 20.w,
-                bottom: 16.h,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.warmCream,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  InkWell(
-                    onTap: () => Navigator.of(context).pop(),
-                    borderRadius: BorderRadius.circular(12.r),
-                    child: Container(
-                      height: 40.r,
-                      width: 40.r,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(
-                          color: AppColors.cardBorder,
-                          width: 1.w,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 20.r,
-                        color: AppColors.darkGreen,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    'Payment schedule',
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.darkGreen,
-                    ),
-                  ),
-                  SizedBox(width: 40.r), // Spacer
-                ],
-              ),
-            ),
+    return AnimatedBuilder(
+      animation: PaymentsStateService(),
+      builder: (context, child) {
+        final confirmed = PaymentsStateService().confirmedBids;
+        final totalContract = confirmed.fold(
+          0.0,
+          (sum, item) => sum + item.totalAmount,
+        );
+        final totalPaid = confirmed.fold(
+          0.0,
+          (sum, item) => sum + item.paidAmount,
+        );
+        final pctPaid = totalContract > 0
+            ? ((totalPaid / totalContract) * 100).clamp(0.0, 100.0)
+            : 0.0;
+        final contractDisplay = totalContract > 0 ? totalContract : 182000.0;
 
-            // ==========================================
-            // 2. SCROLLABLE CONTENT
-            // ==========================================
-            Expanded(
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-                children: [
-                  // Payment Summary Card
-                  Container(
-                    padding: EdgeInsets.all(16.w),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20.r),
-                      border: Border.all(
-                        color: AppColors.cardBorder,
-                        width: 1.w,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Kinnow Block A · Al-Noor Traders',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: AppColors.secondaryText,
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+          ),
+          child: Scaffold(
+            backgroundColor: AppColors.warmCream,
+            body: Column(
+              children: [
+                // ==========================================
+                // 1. FIXED TOP APP BAR
+                // ==========================================
+                Container(
+                  padding: EdgeInsets.only(
+                    top: topPadding > 0 ? topPadding + 8.h : 16.h,
+                    left: 20.w,
+                    right: 20.w,
+                    bottom: 16.h,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: AppColors.warmCream,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      InkWell(
+                        onTap: () => Navigator.of(context).pop(),
+                        borderRadius: BorderRadius.circular(12.r),
+                        child: Container(
+                          height: 40.r,
+                          width: 40.r,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: AppColors.cardBorder,
+                              width: 1.w,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 6.h),
-                        Text(
-                          'PKR 182,000',
-                          style: TextStyle(
-                            fontSize: 26.sp,
-                            fontWeight: FontWeight.bold,
+                          child: Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 20.r,
                             color: AppColors.darkGreen,
                           ),
                         ),
-                        SizedBox(height: 14.h),
-                        // Payment progress bar (0% paid)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(6.r),
-                          child: Container(
-                            height: 10.h,
-                            width: double.infinity,
-                            color: const Color(0xFFEFEADF),
-                          ),
+                      ),
+                      Text(
+                        'Payment schedule',
+                        style: TextStyle(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkGreen,
                         ),
-                        SizedBox(height: 12.h),
-                        Text(
-                          '0% paid. Planning aid only: no real payments are processed, and payments are outside the SRS scope.',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: AppColors.secondaryText,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      SizedBox(width: 40.r), // Spacer
+                    ],
                   ),
+                ),
+
+                // ==========================================
+                // 2. SCROLLABLE CONTENT
+                // ==========================================
+                Expanded(
+                  child: ListView(
+                    physics: const BouncingScrollPhysics(),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+                    children: [
+                      // Payment Summary Card
+                      Container(
+                        padding: EdgeInsets.all(16.w),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20.r),
+                          border: Border.all(
+                            color: AppColors.cardBorder,
+                            width: 1.w,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Kinnow Block A · Al-Noor Traders',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: AppColors.secondaryText,
+                              ),
+                            ),
+                            SizedBox(height: 6.h),
+                            Text(
+                              'PKR ${_formatAmount(contractDisplay)}',
+                              style: TextStyle(
+                                fontSize: 26.sp,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.darkGreen,
+                              ),
+                            ),
+                            SizedBox(height: 14.h),
+                            // Payment progress bar
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6.r),
+                              child: Container(
+                                height: 10.h,
+                                width: double.infinity,
+                                color: const Color(0xFFEFEADF),
+                                child: FractionallySizedBox(
+                                  alignment: Alignment.centerLeft,
+                                  widthFactor: (pctPaid / 100).clamp(0.0, 1.0),
+                                  child: Container(
+                                    color: AppColors.darkGreen,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 12.h),
+                            Text(
+                              '${pctPaid.toStringAsFixed(0)}% paid. Contract schedule synced with active deals.',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: AppColors.secondaryText,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
                   SizedBox(height: 20.h),
 
@@ -317,7 +351,9 @@ class _PaymentScheduleScreenState extends State<PaymentScheduleScreen> {
         ),
       ),
     );
-  }
+  },
+);
+}
 
   Widget _buildTimelineStage({
     required String number,

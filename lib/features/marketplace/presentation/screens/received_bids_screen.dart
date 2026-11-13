@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/bids_state_service.dart';
 import '../../../../core/services/listing_state_service.dart';
+import '../../../../core/services/notifications_state_service.dart';
 import '../../../../core/services/orders_state_service.dart';
 import '../../../../core/services/payments_state_service.dart';
 import '../../../home/presentation/screens/grower_dashboard_screen.dart';
@@ -95,10 +96,34 @@ class _ReceivedBidsScreenState extends State<ReceivedBidsScreen> {
                   bid.id,
                   VendorBidStatus.accepted,
                 );
+                NotificationsStateService().addNotification(
+                  NotificationItem(
+                    id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+                    title: 'Bid Accepted!',
+                    description:
+                        'You accepted ${bid.companyName}\'s bid of PKR ${_formatAmount(bid.amount)} for Kinnow Block A.',
+                    time: 'Just now',
+                    category: 'Bids',
+                    iconData: Icons.check_circle_outline,
+                    isRead: false,
+                  ),
+                );
               } else {
                 ListingStateService().updateVendorBidStatus(
                   bid.id,
                   VendorBidStatus.rejected,
+                );
+                NotificationsStateService().addNotification(
+                  NotificationItem(
+                    id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+                    title: 'Bid Rejected',
+                    description:
+                        'You rejected ${bid.companyName}\'s bid for Kinnow Block A.',
+                    time: 'Just now',
+                    category: 'Bids',
+                    iconData: Icons.cancel_outlined,
+                    isRead: false,
+                  ),
                 );
               }
               BidsStateService().removeBid(bid.id);

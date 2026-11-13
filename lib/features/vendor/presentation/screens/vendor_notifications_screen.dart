@@ -142,6 +142,74 @@ class _VendorNotificationsScreenState
     );
   }
 
+  void _clearAllNotifications() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
+        backgroundColor: Colors.white,
+        title: Text(
+          'Clear All Notifications?',
+          style: TextStyle(
+            fontSize: 18.sp,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkGreen,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to clear all vendor notifications?',
+          style: TextStyle(
+            fontSize: 14.sp,
+            color: AppColors.secondaryText,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: AppColors.secondaryText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.errorRed,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+              setState(() {
+                _notifications.clear();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('All notifications cleared.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            child: Text(
+              'Clear All',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _handleNotificationTap(VendorNotificationItem notification) {
     setState(() {
       notification.isRead = true;
@@ -236,18 +304,32 @@ class _VendorNotificationsScreenState
                           ),
                         ),
                       ),
-                      if (_unreadCount > 0)
-                        TextButton(
-                          onPressed: _markAllAsRead,
-                          child: Text(
-                            'Mark all as read',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.secondaryGreen,
+                      Row(
+                        children: [
+                          if (_unreadCount > 0)
+                            TextButton(
+                              onPressed: _markAllAsRead,
+                              child: Text(
+                                'Mark all as read',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.secondaryGreen,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
+                          if (_notifications.isNotEmpty)
+                            IconButton(
+                              onPressed: _clearAllNotifications,
+                              tooltip: 'Clear all',
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 22.r,
+                                color: AppColors.errorRed,
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                   SizedBox(height: 12.h),
