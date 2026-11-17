@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../data/repositories/auth_repository.dart';
 import 'password_reset_otp_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -23,7 +22,6 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _emailController;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -37,37 +35,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  Future<void> _handleSendResetInstructions() async {
+  void _handleSendResetInstructions() {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-
-    try {
-      final email = _emailController.text.trim();
-      await AuthRepository().forgotPassword(email: email);
-
-      if (!mounted) return;
-
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PasswordResetOtpScreen(
-            role: widget.role,
-            email: email,
-          ),
+    // Navigate to 4-digit PasswordResetOtpScreen passing role & entered email
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PasswordResetOtpScreen(
+          role: widget.role,
+          email: _emailController.text.trim(),
         ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Password reset request failed: ${e.toString()}'),
-          backgroundColor: AppColors.errorRed,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+      ),
+    );
   }
 
   @override
@@ -374,24 +353,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 borderRadius: BorderRadius.circular(14.r),
                               ),
                             ),
-                            onPressed: _isLoading ? null : _handleSendResetInstructions,
-                            child: _isLoading
-                                ? SizedBox(
-                                    height: 20.r,
-                                    width: 20.r,
-                                    child: const CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Text(
-                                    'Send reset instructions',
-                                    style: TextStyle(
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                            onPressed: _handleSendResetInstructions,
+                            child: Text(
+                              'Send reset instructions',
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
 
