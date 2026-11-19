@@ -8,12 +8,22 @@ class ApiEndpoints {
     if (envUrl != null && envUrl.isNotEmpty) {
       return envUrl;
     }
-    // Android emulator maps host 127.0.0.1 to 10.0.2.2
+    // Default PC Wi-Fi IP fallback
     if (!kIsWeb && Platform.isAndroid) {
-      return 'http://10.0.2.2:8000';
+      return 'http://192.168.1.46:8000';
     }
-    return 'http://127.0.0.1:8000';
+    return 'http://192.168.1.46:8000';
   }
+
+  static List<String> get candidateBaseUrls => [
+        if (dotenv.env['BASE_URL'] != null && dotenv.env['BASE_URL']!.isNotEmpty)
+          dotenv.env['BASE_URL']!,
+        'http://192.168.1.46:8000',
+        'http://10.0.2.2:8000',
+        'http://127.0.0.1:8000',
+        'http://0.0.0.0:8000',
+        'http://localhost:8000',
+      ];
 
   // Auth Endpoints
   static const String login = '/auth/login';

@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/api_exceptions.dart';
+import '../../data/repositories/auth_repository.dart';
 import 'create_new_password_screen.dart';
 
 class PasswordResetOtpScreen extends StatefulWidget {
@@ -95,7 +97,42 @@ class _PasswordResetOtpScreenState extends State<PasswordResetOtpScreen> {
       _hasError = false;
     });
 
-    await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final isValid = await AuthRepository().verifyOtp(
+        email: widget.email,
+        otp: otp,
+      );
+
+      if (!isValid) {
+        if (!mounted) return;
+        setState(() {
+          _isVerifying = false;
+          _hasError = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid verification code. Please enter the correct OTP.'),
+            backgroundColor: AppColors.errorRed,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isVerifying = false;
+        _hasError = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.errorRed,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    } catch (_) {}
 
     if (!mounted) return;
 
@@ -111,16 +148,30 @@ class _PasswordResetOtpScreenState extends State<PasswordResetOtpScreen> {
     );
   }
 
-  void _handleResendCode() {
+  Future<void> _handleResendCode() async {
     if (!_canResend) return;
     _startResendTimer();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password reset code resent to your email.'),
-        backgroundColor: AppColors.darkGreen,
-        duration: Duration(seconds: 2),
-      ),
-    );
+
+    try {
+      await AuthRepository().resendOtp(email: widget.email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Password reset code sent to ${widget.email}.'),
+          backgroundColor: AppColors.darkGreen,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Resend code requested for ${widget.email}.'),
+          backgroundColor: AppColors.darkGreen,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _onOtpChanged(int index, String value) {

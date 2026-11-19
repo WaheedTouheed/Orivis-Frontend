@@ -52,9 +52,11 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Password updated successfully! Please log in.'),
+        content: Text(
+          'Your password has been reset successfully. Please log in with your new password.',
+        ),
         backgroundColor: AppColors.darkGreen,
-        duration: Duration(seconds: 2),
+        duration: Duration(seconds: 3),
       ),
     );
 
