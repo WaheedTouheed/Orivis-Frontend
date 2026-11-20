@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/api_exceptions.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'grower_login_screen.dart';
 import 'login_screen.dart';
@@ -10,11 +11,13 @@ import 'login_screen.dart';
 class CreateNewPasswordScreen extends StatefulWidget {
   final String role; // 'Grower' or 'Vendor'
   final String email;
+  final String? token;
 
   const CreateNewPasswordScreen({
     super.key,
     required this.role,
     required this.email,
+    this.token,
   });
 
   @override
@@ -29,6 +32,7 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -40,27 +44,52 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
   Future<void> _handleResetPassword() async {
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _isLoading = true);
+
     final newPassword = _passwordController.text;
     try {
       await AuthRepository().resetPassword(
         email: widget.email,
         newPassword: newPassword,
+        token: widget.token,
       );
-    } catch (_) {}
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Your password has been reset successfully. Please log in with your new password.',
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Your password has been reset successfully. Please log in with your new password.',
+          ),
+          backgroundColor: AppColors.darkGreen,
+          duration: Duration(seconds: 3),
         ),
-        backgroundColor: AppColors.darkGreen,
-        duration: Duration(seconds: 3),
-      ),
-    );
+      );
 
-    _navigateToLogin();
+      _navigateToLogin();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.errorRed,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Unable to connect to the server. Please check your internet connection and try again.',
+          ),
+          backgroundColor: AppColors.errorRed,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _navigateToLogin() {
@@ -320,15 +349,24 @@ class _CreateNewPasswordScreenState extends State<CreateNewPasswordScreen> {
                                 borderRadius: BorderRadius.circular(14.r),
                               ),
                             ),
-                            onPressed: _handleResetPassword,
-                            child: Text(
-                              'Reset password',
-                              style: TextStyle(
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
+                            onPressed: _isLoading ? null : _handleResetPassword,
+                            child: _isLoading
+                                ? SizedBox(
+                                    height: 20.r,
+                                    width: 20.r,
+                                    child: const CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    'Reset password',
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                           ),
                         ),
 

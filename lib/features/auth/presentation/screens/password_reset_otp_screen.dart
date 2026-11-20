@@ -132,7 +132,21 @@ class _PasswordResetOtpScreenState extends State<PasswordResetOtpScreen> {
         ),
       );
       return;
-    } catch (_) {}
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isVerifying = false;
+        _hasError = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Verification error: ${e.toString()}'),
+          backgroundColor: AppColors.errorRed,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
 
     if (!mounted) return;
 
@@ -143,6 +157,7 @@ class _PasswordResetOtpScreenState extends State<PasswordResetOtpScreen> {
         builder: (_) => CreateNewPasswordScreen(
           role: widget.role,
           email: widget.email,
+          token: otp,
         ),
       ),
     );

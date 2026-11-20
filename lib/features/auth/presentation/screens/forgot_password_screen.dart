@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/api_exceptions.dart';
+import '../../data/repositories/auth_repository.dart';
 import 'password_reset_otp_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -22,6 +24,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _emailController;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -35,18 +38,57 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  void _handleSendResetInstructions() {
+  Future<void> _handleSendResetInstructions() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Navigate to 4-digit PasswordResetOtpScreen passing role & entered email
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PasswordResetOtpScreen(
-          role: widget.role,
-          email: _emailController.text.trim(),
+    setState(() => _isLoading = true);
+
+    final email = _emailController.text.trim();
+
+    try {
+      await AuthRepository().forgotPassword(email: email);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Password reset OTP sent to $email.'),
+          backgroundColor: AppColors.darkGreen,
+          duration: const Duration(seconds: 3),
         ),
-      ),
-    );
+      );
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PasswordResetOtpScreen(
+            role: widget.role,
+            email: email,
+          ),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.errorRed,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Unable to connect to the server. Please check your internet connection and try again.',
+          ),
+          backgroundColor: AppColors.errorRed,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -57,8 +99,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark, // Dark status bar icons on warm cream
-        statusBarBrightness: Brightness.light,    // Dark status bar text on iOS
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
         backgroundColor: AppColors.warmCream,
@@ -74,9 +116,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // ==========================================
-                // 1. TOP HEADER SECTION (Warm Cream BG)
-                // ==========================================
+                // Header Row
                 Row(
                   children: [
                     InkWell(
@@ -105,7 +145,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 SizedBox(height: 12.h),
 
-                // ORIVIS Logo
+                // Logo
                 Center(
                   child: Image.asset(
                     AppAssets.logo,
@@ -124,7 +164,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 SizedBox(height: 18.h),
 
-                // Main Heading
                 Text(
                   'Forgot password?',
                   textAlign: TextAlign.center,
@@ -137,7 +176,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 SizedBox(height: 6.h),
 
-                // Subtitle
                 Text(
                   "Don't worry, we'll help you reset it.",
                   textAlign: TextAlign.center,
@@ -149,13 +187,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 SizedBox(height: 16.h),
 
-                // ==========================================
-                // 2. ROLE INDICATOR BADGE
-                // ==========================================
+                // Role Badge
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEAF1E9), // Light Green Badge BG (#EAF1E9)
+                    color: const Color(0xFFEAF1E9),
                     borderRadius: BorderRadius.circular(10.r),
                   ),
                   child: Text(
@@ -171,9 +208,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 SizedBox(height: 24.h),
 
-                // ==========================================
-                // 3. INSTRUCTION CARD & EMAIL FORM
-                // ==========================================
+                // Form Card
                 Container(
                   width: double.infinity,
                   padding: EdgeInsets.all(20.w),
@@ -197,12 +232,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Outlined Mail Icon in Circular Container
                         Container(
                           height: 64.r,
                           width: 64.r,
                           decoration: const BoxDecoration(
-                            color: Color(0xFFEAF1E9), // #EAF1E9
+                            color: Color(0xFFEAF1E9),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -214,7 +248,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                         SizedBox(height: 16.h),
 
-                        // Title inside card
                         Text(
                           'Reset your password',
                           textAlign: TextAlign.center,
@@ -227,9 +260,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                         SizedBox(height: 8.h),
 
-                        // Description
                         Text(
-                          "Enter the email address associated with your account. We'll guide you through the next steps.",
+                          "Enter the email address associated with your account. We'll send an OTP code.",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14.sp,
@@ -240,9 +272,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                         SizedBox(height: 24.h),
 
-                        // ----------------------------------------
-                        // EMAIL INPUT FIELD
-                        // ----------------------------------------
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text.rich(
@@ -337,9 +366,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                         SizedBox(height: 24.h),
 
-                        // ----------------------------------------
-                        // SEND RESET INSTRUCTIONS BUTTON
-                        // ----------------------------------------
+                        // Send Button with Loading Spinner
                         SizedBox(
                           width: double.infinity,
                           height: 52.h,
@@ -348,28 +375,37 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               backgroundColor: AppColors.darkGreen,
                               foregroundColor: Colors.white,
                               elevation: 2,
-                              shadowColor: Colors.black.withValues(alpha: 0.15),
+                              shadowColor:
+                                  Colors.black.withValues(alpha: 0.15),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14.r),
                               ),
                             ),
-                            onPressed: _handleSendResetInstructions,
-                            child: Text(
-                              'Send reset instructions',
-                              style: TextStyle(
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
+                            onPressed: _isLoading
+                                ? null
+                                : _handleSendResetInstructions,
+                            child: _isLoading
+                                ? SizedBox(
+                                    height: 20.r,
+                                    width: 20.r,
+                                    child: const CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    'Send reset instructions',
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                           ),
                         ),
 
                         SizedBox(height: 20.h),
 
-                        // ----------------------------------------
-                        // BACK TO LOGIN LINK
-                        // ----------------------------------------
                         Center(
                           child: InkWell(
                             onTap: () => Navigator.of(context).pop(),

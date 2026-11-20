@@ -14,13 +14,39 @@ class ApiException implements Exception {
       case DioExceptionType.connectionError:
         return ApiException(
           message:
-              'Unable to connect to the server. Please check your internet connection and try again.',
+              'Unable to connect to server. Please verify backend server IP and Wi-Fi connection.',
         );
 
       case DioExceptionType.badResponse:
         final response = dioException.response;
         final statusCode = response?.statusCode;
         final data = response?.data;
+
+        if (response != null && data != null) {
+          if (data is Map<String, dynamic>) {
+            final detail = data['detail'] ?? data['message'] ?? data['error'];
+            if (detail != null) {
+              if (detail is List && detail.isNotEmpty) {
+                final firstErr = detail.first;
+                if (firstErr is Map && firstErr['msg'] != null) {
+                  return ApiException(
+                    message: firstErr['msg'].toString(),
+                    statusCode: statusCode,
+                  );
+                }
+              }
+              return ApiException(
+                message: detail.toString(),
+                statusCode: statusCode,
+              );
+            }
+          } else if (data is String && data.isNotEmpty) {
+            return ApiException(
+              message: data,
+              statusCode: statusCode,
+            );
+          }
+        }
 
         if (statusCode == 401) {
           return ApiException(
@@ -30,40 +56,9 @@ class ApiException implements Exception {
           );
         }
 
-        if (response != null && data is Map<String, dynamic>) {
-          final detail = data['detail'] ?? data['message'] ?? data['error'];
-          if (detail != null) {
-            final detailStr = detail.toString();
-            if (detailStr.toLowerCase().contains('expire')) {
-              return ApiException(
-                message:
-                    'Your verification code has expired. Please request a new code.',
-                statusCode: statusCode,
-              );
-            }
-            if (detailStr.toLowerCase().contains('otp') ||
-                detailStr.toLowerCase().contains('code')) {
-              return ApiException(
-                message: 'Invalid verification code. Please enter the correct OTP.',
-                statusCode: statusCode,
-              );
-            }
-            return ApiException(
-              message: detailStr,
-              statusCode: statusCode,
-            );
-          }
-        }
-
-        if (statusCode != null && statusCode >= 500) {
-          return ApiException(
-            message: 'Something went wrong. Please try again later.',
-            statusCode: statusCode,
-          );
-        }
-
         return ApiException(
-          message: 'Authentication failed. Please check your details and try again.',
+          message:
+              'Server returned error (${statusCode ?? "Unknown"}). Please check submitted data.',
           statusCode: statusCode,
         );
 
@@ -72,7 +67,7 @@ class ApiException implements Exception {
 
       default:
         return ApiException(
-          message: 'Something went wrong. Please try again later.',
+          message: 'Something went wrong. Please check your server connection.',
         );
     }
   }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/network/api_exceptions.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'forgot_password_screen.dart';
 import 'grower_create_account_screen.dart';
@@ -42,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final email = _emailController.text.trim();
       final password = _passwordController.text;
 
-      await AuthRepository().login(
+      final user = await AuthRepository().login(
         email: email,
         password: password,
         role: widget.role == 'vendor' ? 'vendor' : 'grower',
@@ -53,18 +54,31 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => OtpVerificationScreen(
-            role: widget.role == 'vendor' ? 'Vendor' : 'Account',
+            role: user.role.isNotEmpty
+                ? user.role
+                : (widget.role == 'vendor' ? 'Vendor' : 'Grower'),
             email: email,
           ),
         ),
       );
-    } catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Login failed: ${e.toString()}'),
+          content: Text(e.message),
           backgroundColor: AppColors.errorRed,
           duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Invalid email or password. Please check your credentials and try again.',
+          ),
+          backgroundColor: AppColors.errorRed,
+          duration: Duration(seconds: 3),
         ),
       );
     } finally {
