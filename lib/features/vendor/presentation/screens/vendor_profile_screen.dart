@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/profile_state_service.dart';
+import '../../../../core/widgets/profile_picture_viewer.dart';
 import '../../../auth/presentation/screens/welcome_role_screen.dart';
 import '../widgets/vendor_bottom_navigation.dart';
 import 'vendor_bids_history_screen.dart';
@@ -51,16 +53,20 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
     );
 
     if (result != null && mounted) {
+      final comp = result['company'] ?? _vendorName;
+      final em = result['email'] ?? _email;
+      final ph = result['phone'] ?? _phone;
+      await ProfileStateService().updateProfile(name: comp, email: em, phone: ph);
       setState(() {
-        _vendorName = result['company'] ?? _vendorName;
+        _vendorName = comp;
         _location = result['region'] ?? _location;
-        _email = result['email'] ?? _email;
-        _phone = result['phone'] ?? _phone;
+        _email = em;
+        _phone = ph;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Business details updated successfully (Demo).'),
+          content: Text('Business details updated successfully.'),
           backgroundColor: AppColors.darkGreen,
           duration: Duration(seconds: 2),
         ),
@@ -74,6 +80,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
       final pickedFile = await picker.pickImage(source: source);
       if (!mounted) return;
       if (pickedFile != null) {
+        await ProfileStateService().updateProfileImage(pickedFile.path);
         setState(() {
           _profileImage = File(pickedFile.path);
         });
@@ -138,6 +145,47 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
               ),
             ),
             SizedBox(height: 16.h),
+
+            // Option 0: View Profile Picture
+            ListTile(
+              leading: Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE3F2FD),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.fullscreen_rounded,
+                  color: Color(0xFF1976D2),
+                  size: 20.r,
+                ),
+              ),
+              title: Text(
+                'View Profile Picture',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+              subtitle: Text(
+                'Open full-screen photo view',
+                style:
+                    TextStyle(fontSize: 11.sp, color: AppColors.secondaryText),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                showProfilePictureViewer(
+                  context: context,
+                  imageFile: ProfileStateService().profileImageFile,
+                  name: ProfileStateService().userName.contains('Grower')
+                      ? 'Al-Noor Traders'
+                      : ProfileStateService().userName,
+                  onChangePhoto: _showImageSourceModal,
+                );
+              },
+            ),
+            const Divider(color: AppColors.cardBorder, height: 1),
 
             // Option 1: Camera
             ListTile(
@@ -252,106 +300,117 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.warmCream,
-        body: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    // Green header with Vendor Avatar & Verified Badge
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.only(
-                        top: topPadding > 0 ? topPadding + 16.h : 24.h,
-                        bottom: 32.h,
-                        left: 20.w,
-                        right: 20.w,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.darkGreen,
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(28.r),
-                          bottomRight: Radius.circular(28.r),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          // Avatar Stack with Edit Camera Badge
-                          Stack(
-                            alignment: Alignment.center,
+    return AnimatedBuilder(
+      animation: ProfileStateService(),
+      builder: (context, _) {
+        final profileState = ProfileStateService();
+        final vendorImageFile = profileState.profileImageFile;
+        final vendorDisplayName = profileState.userName.contains('Grower')
+            ? _vendorName
+            : profileState.userName;
+
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          ),
+          child: Scaffold(
+            backgroundColor: AppColors.warmCream,
+            body: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        // Green header with Vendor Avatar & Verified Badge
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.only(
+                            top: topPadding > 0 ? topPadding + 16.h : 24.h,
+                            bottom: 32.h,
+                            left: 20.w,
+                            right: 20.w,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.darkGreen,
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(28.r),
+                              bottomRight: Radius.circular(28.r),
+                            ),
+                          ),
+                          child: Column(
                             children: [
-                              InkWell(
-                                onTap: _showImageSourceModal,
-                                borderRadius: BorderRadius.circular(44.r),
-                                child: Container(
-                                  height: 84.r,
-                                  width: 84.r,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: const Color(0xFFF99A20),
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 2.5.w,
-                                    ),
-                                  ),
-                                  child: ClipOval(
-                                    child: _profileImage != null
-                                        ? Image.file(
-                                            _profileImage!,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Center(
-                                            child: Text(
-                                              'AN',
-                                              style: TextStyle(
-                                                fontSize: 28.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
+                              // Avatar Stack with Edit Camera Badge
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  InkWell(
+                                    onTap: _showImageSourceModal,
+                                    borderRadius: BorderRadius.circular(44.r),
+                                    child: Container(
+                                      height: 84.r,
+                                      width: 84.r,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: const Color(0xFFF99A20),
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 2.5.w,
+                                        ),
+                                      ),
+                                      child: ClipOval(
+                                        child: vendorImageFile != null
+                                            ? Image.file(
+                                                vendorImageFile,
+                                                fit: BoxFit.cover,
+                                                width: 84.r,
+                                                height: 84.r,
+                                              )
+                                            : Center(
+                                                child: Text(
+                                                  'AN',
+                                                  style: TextStyle(
+                                                    fontSize: 28.sp,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: InkWell(
-                                  onTap: _showImageSourceModal,
-                                  borderRadius: BorderRadius.circular(14.r),
-                                  child: Container(
-                                    height: 28.r,
-                                    width: 28.r,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: AppColors.darkGreen,
-                                        width: 1.5.w,
                                       ),
                                     ),
-                                    child: Icon(
-                                      Icons.camera_alt_rounded,
-                                      size: 14.r,
-                                      color: AppColors.darkGreen,
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: InkWell(
+                                      onTap: _showImageSourceModal,
+                                      borderRadius: BorderRadius.circular(14.r),
+                                      child: Container(
+                                        height: 28.r,
+                                        width: 28.r,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: AppColors.darkGreen,
+                                            width: 1.5.w,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.camera_alt_rounded,
+                                          size: 14.r,
+                                          color: AppColors.darkGreen,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
-                          ),
-                          SizedBox(height: 12.h),
-                          Text(
-                            _vendorName,
+                              SizedBox(height: 12.h),
+                              Text(
+                                vendorDisplayName,
                             style: TextStyle(
                               fontSize: 20.sp,
                               fontWeight: FontWeight.bold,
@@ -573,7 +632,9 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
         bottomNavigationBar: const VendorBottomNavigation(selectedIndex: 4),
       ),
     );
-  }
+  },
+);
+}
 
   Widget _buildInfoCard(List<Widget> children) {
     return Container(

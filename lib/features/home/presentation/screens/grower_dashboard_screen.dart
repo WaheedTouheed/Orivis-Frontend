@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/bids_state_service.dart';
 import '../../../../core/services/notifications_state_service.dart';
 import '../../../../core/services/orchard_state_service.dart';
+import '../../../../core/services/profile_state_service.dart';
+import '../../../../core/widgets/profile_picture_viewer.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
 import '../../../scan/presentation/screens/scan_history_screen.dart';
@@ -23,6 +27,146 @@ class GrowerDashboardScreen extends StatefulWidget {
 
 class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
   int _selectedBottomIndex = 0;
+
+  Future<void> _pickDashboardImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: source);
+      if (pickedFile != null) {
+        await ProfileStateService().updateProfileImage(pickedFile.path);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile picture updated successfully.'),
+            backgroundColor: AppColors.darkGreen,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not update image: $e'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    }
+  }
+
+  void _openDashboardProfileViewer() {
+    showProfilePictureViewer(
+      context: context,
+      imageFile: ProfileStateService().profileImageFile,
+      name: ProfileStateService().userName,
+      onChangePhoto: _showPhotoOptionsModal,
+    );
+  }
+
+  void _showPhotoOptionsModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40.w,
+                height: 4.h,
+                margin: EdgeInsets.only(bottom: 16.h),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            Text(
+              'Profile Photo Options',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGreen,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            ListTile(
+              leading: Icon(Icons.fullscreen_rounded,
+                  color: const Color(0xFF1976D2), size: 22.r),
+              title: Text('View Profile Picture',
+                  style: TextStyle(
+                      fontSize: 14.sp, fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                showProfilePictureViewer(
+                  context: context,
+                  imageFile: ProfileStateService().profileImageFile,
+                  name: ProfileStateService().userName,
+                  onChangePhoto: _showPhotoOptionsModal,
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.camera_alt_outlined,
+                  color: AppColors.darkGreen, size: 22.r),
+              title: Text('Take Photo (Camera)',
+                  style: TextStyle(
+                      fontSize: 14.sp, fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickDashboardImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library_outlined,
+                  color: const Color(0xFFF99A20), size: 22.r),
+              title: Text('Choose from Gallery',
+                  style: TextStyle(
+                      fontSize: 14.sp, fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickDashboardImage(ImageSource.gallery);
+              },
+            ),
+            if (ProfileStateService().profileImageFile != null)
+              ListTile(
+                leading: Icon(Icons.delete_outline_rounded,
+                    color: AppColors.errorRed, size: 22.r),
+                title: Text('Remove Photo',
+                    style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.errorRed)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ProfileStateService().clearProfileImage();
+                },
+              ),
+            ListTile(
+              leading: Icon(Icons.person_outline_rounded,
+                  color: AppColors.darkGreen, size: 22.r),
+              title: Text('View Full Profile',
+                  style: TextStyle(
+                      fontSize: 14.sp, fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   final Map<String, Map<String, dynamic>> _orchardData = {
     'Kinnow Block A': {
@@ -126,131 +270,181 @@ class _GrowerDashboardScreenState extends State<GrowerDashboardScreen> {
                             left: 20.w,
                             right: 20.w,
                           ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Avatar (AR) & Greeting -> Profile
-                              InkWell(
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const ProfileScreen(),
-                                    ),
-                                  );
-                                },
-                                borderRadius: BorderRadius.circular(24.r),
-                                child: Container(
-                                  height: 48.r,
-                                  width: 48.r,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFF99A20), // Orange avatar (#F99A20)
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'AR',
-                                      style: TextStyle(
-                                        fontSize: 18.sp,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                          child: AnimatedBuilder(
+                            animation: ProfileStateService(),
+                            builder: (context, child) {
+                              final profileService = ProfileStateService();
+                              final imageFile = profileService.profileImageFile;
+                              final userName = profileService.userName;
+                              final initials = userName.isNotEmpty
+                                  ? userName
+                                      .split(' ')
+                                      .map((e) => e.isNotEmpty ? e[0] : '')
+                                      .take(2)
+                                      .join()
+                                      .toUpperCase()
+                                  : 'GA';
 
-                              SizedBox(width: 14.w),
-
-                              // Greeting & Name -> Profile
-                              Expanded(
-                                child: InkWell(
-                                  onTap: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => const ProfileScreen(),
-                                      ),
-                                    );
-                                  },
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Avatar with camera edit badge
+                                  Stack(
                                     children: [
-                                      Text(
-                                        'Assalam-o-Alaikum',
-                                        style: TextStyle(
-                                          fontSize: 13.sp,
-                                          fontWeight: FontWeight.w400,
-                                          color: AppColors.subtitleLight,
+                                      InkWell(
+                                        onTap: _openDashboardProfileViewer,
+                                        borderRadius: BorderRadius.circular(24.r),
+                                        child: Container(
+                                          height: 48.r,
+                                          width: 48.r,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFF99A20),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(24.r),
+                                            child: imageFile != null
+                                                ? Image.file(
+                                                    imageFile,
+                                                    fit: BoxFit.cover,
+                                                    width: 48.r,
+                                                    height: 48.r,
+                                                  )
+                                                : Center(
+                                                    child: Text(
+                                                      initials,
+                                                      style: TextStyle(
+                                                        fontSize: 18.sp,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                          ),
                                         ),
                                       ),
-                                      SizedBox(height: 2.h),
-                                      Text(
-                                        'Ali Raza',
-                                        style: TextStyle(
-                                          fontSize: 18.sp,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              // Notification Button with Badge
-                              InkWell(
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const NotificationsScreen(),
-                                    ),
-                                  );
-                                },
-                                borderRadius: BorderRadius.circular(16.r),
-                                child: Container(
-                                  height: 44.r,
-                                  width: 44.r,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(16.r),
-                                  ),
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.notifications_none_outlined,
-                                        size: 22.r,
-                                        color: Colors.white,
-                                      ),
-                                      if (unreadNotifications > 0)
-                                        Positioned(
-                                          top: 8.r,
-                                          right: 8.r,
+                                      Positioned(
+                                        right: 0,
+                                        bottom: 0,
+                                        child: InkWell(
+                                          onTap: _openDashboardProfileViewer,
                                           child: Container(
-                                            height: 14.r,
-                                            width: 14.r,
+                                            padding: EdgeInsets.all(3.r),
                                             decoration: const BoxDecoration(
-                                              color: Color(0xFFF99A20),
+                                              color: Colors.white,
                                               shape: BoxShape.circle,
                                             ),
-                                            child: Center(
-                                              child: Text(
-                                                '$unreadNotifications',
-                                                style: TextStyle(
-                                                  fontSize: 9.sp,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
+                                            child: Icon(
+                                              Icons.camera_alt,
+                                              size: 11.r,
+                                              color: AppColors.darkGreen,
                                             ),
                                           ),
                                         ),
+                                      ),
                                     ],
                                   ),
-                                ),
-                              ),
-                            ],
+
+                                  SizedBox(width: 14.w),
+
+                                  // Greeting & Name -> Profile
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => const ProfileScreen(),
+                                          ),
+                                        );
+                                      },
+                                      borderRadius: BorderRadius.circular(8.r),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Assalam-o-Alaikum',
+                                            style: TextStyle(
+                                              fontSize: 13.sp,
+                                              fontWeight: FontWeight.w400,
+                                              color: AppColors.subtitleLight,
+                                            ),
+                                          ),
+                                          SizedBox(height: 2.h),
+                                          Text(
+                                            userName,
+                                            style: TextStyle(
+                                              fontSize: 18.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  // Notification Button with Badge
+                                  InkWell(
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const NotificationsScreen(),
+                                        ),
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(16.r),
+                                    child: Container(
+                                      height: 44.r,
+                                      width: 44.r,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.12),
+                                        borderRadius:
+                                            BorderRadius.circular(16.r),
+                                      ),
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.notifications_none_outlined,
+                                            size: 22.r,
+                                            color: Colors.white,
+                                          ),
+                                          if (unreadNotifications > 0)
+                                            Positioned(
+                                              top: 8.r,
+                                              right: 8.r,
+                                              child: Container(
+                                                height: 14.r,
+                                                width: 14.r,
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFFF99A20),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    '$unreadNotifications',
+                                                    style: TextStyle(
+                                                      fontSize: 9.sp,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ),
 

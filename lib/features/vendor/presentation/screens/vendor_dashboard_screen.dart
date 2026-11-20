@@ -1,9 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/listing_state_service.dart';
 import '../../../../core/services/notifications_state_service.dart';
+import '../../../../core/services/profile_state_service.dart';
+import '../../../../core/widgets/profile_picture_viewer.dart';
 import 'vendor_notifications_screen.dart';
 import 'vendor_profile_screen.dart';
 import 'vendor_bid_screen.dart';
@@ -24,6 +28,151 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
   String _selectedCategory = 'All';
 
   final List<String> _categories = ['All', 'Mostly ripe', 'High yield', 'Newest'];
+
+  Future<void> _pickVendorImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: source);
+      if (pickedFile != null) {
+        await ProfileStateService().updateProfileImage(pickedFile.path);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vendor profile picture updated successfully.'),
+            backgroundColor: AppColors.darkGreen,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not update image: $e'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    }
+  }
+
+  void _openVendorDashboardProfileViewer() {
+    showProfilePictureViewer(
+      context: context,
+      imageFile: ProfileStateService().profileImageFile,
+      name: ProfileStateService().userName.contains('Grower')
+          ? 'Al-Noor Traders'
+          : ProfileStateService().userName,
+      onChangePhoto: _showVendorPhotoModal,
+    );
+  }
+
+  void _showVendorPhotoModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40.w,
+                height: 4.h,
+                margin: EdgeInsets.only(bottom: 16.h),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            Text(
+              'Vendor Profile Photo Options',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGreen,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            ListTile(
+              leading: Icon(Icons.fullscreen_rounded,
+                  color: const Color(0xFF1976D2), size: 22.r),
+              title: Text('View Profile Picture',
+                  style: TextStyle(
+                      fontSize: 14.sp, fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                showProfilePictureViewer(
+                  context: context,
+                  imageFile: ProfileStateService().profileImageFile,
+                  name: ProfileStateService().userName.contains('Grower')
+                      ? 'Al-Noor Traders'
+                      : ProfileStateService().userName,
+                  onChangePhoto: _showVendorPhotoModal,
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.camera_alt_outlined,
+                  color: AppColors.darkGreen, size: 22.r),
+              title: Text('Take Photo (Camera)',
+                  style: TextStyle(
+                      fontSize: 14.sp, fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickVendorImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library_outlined,
+                  color: const Color(0xFFF99A20), size: 22.r),
+              title: Text('Choose from Gallery',
+                  style: TextStyle(
+                      fontSize: 14.sp, fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickVendorImage(ImageSource.gallery);
+              },
+            ),
+            if (ProfileStateService().profileImageFile != null)
+              ListTile(
+                leading: Icon(Icons.delete_outline_rounded,
+                    color: AppColors.errorRed, size: 22.r),
+                title: Text('Remove Photo',
+                    style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.errorRed)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await ProfileStateService().clearProfileImage();
+                },
+              ),
+            ListTile(
+              leading: Icon(Icons.person_outline_rounded,
+                  color: AppColors.darkGreen, size: 22.r),
+              title: Text('View Full Vendor Profile',
+                  style: TextStyle(
+                      fontSize: 14.sp, fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const VendorProfileScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -340,9 +489,15 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
       animation: Listenable.merge([
         ListingStateService(),
         NotificationsStateService(),
+        ProfileStateService(),
       ]),
       builder: (context, _) {
         final service = ListingStateService();
+        final profileService = ProfileStateService();
+        final vendorImageFile = profileService.profileImageFile;
+        final vendorNameDisplay = profileService.userName.contains('Grower')
+            ? 'Al-Noor Traders'
+            : profileService.userName;
         final allListings = service.listings;
         final filtered = _filteredListings(allListings);
         final pendingBids = service.pendingBidCount;
@@ -395,36 +550,64 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                   Row(
                                     crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
-                                      // Orange Avatar -> Profile
-                                      InkWell(
-                                        onTap: () {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const VendorProfileScreen(),
-                                            ),
-                                          );
-                                        },
-                                        borderRadius:
-                                            BorderRadius.circular(25.r),
-                                        child: Container(
-                                          height: 50.r,
-                                          width: 50.r,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFFF99A20),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              'AN',
-                                              style: TextStyle(
-                                                fontSize: 18.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
+                                      // Orange Avatar + Camera Badge -> Vendor Photo Viewer
+                                      Stack(
+                                        children: [
+                                          InkWell(
+                                            onTap: _openVendorDashboardProfileViewer,
+                                            borderRadius:
+                                                BorderRadius.circular(25.r),
+                                            child: Container(
+                                              height: 50.r,
+                                              width: 50.r,
+                                              decoration: const BoxDecoration(
+                                                color: Color(0xFFF99A20),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(25.r),
+                                                child: vendorImageFile != null
+                                                    ? Image.file(
+                                                        vendorImageFile,
+                                                        fit: BoxFit.cover,
+                                                        width: 50.r,
+                                                        height: 50.r,
+                                                      )
+                                                    : Center(
+                                                        child: Text(
+                                                          'AN',
+                                                          style: TextStyle(
+                                                            fontSize: 18.sp,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            color: Colors.white,
+                                                          ),
+                                                        ),
+                                                      ),
                                               ),
                                             ),
                                           ),
-                                        ),
+                                          Positioned(
+                                            right: 0,
+                                            bottom: 0,
+                                            child: InkWell(
+                                              onTap: _openVendorDashboardProfileViewer,
+                                              child: Container(
+                                                padding: EdgeInsets.all(3.r),
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.white,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  Icons.camera_alt,
+                                                  size: 11.r,
+                                                  color: AppColors.darkGreen,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                       SizedBox(width: 14.w),
                                       // Greeting + Name -> Profile
@@ -451,12 +634,12 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                                                   fontSize: 13.sp,
                                                   fontWeight: FontWeight.w400,
                                                   color:
-                                                      const Color(0xFFDCE9E0),
+                                                      AppColors.subtitleLight,
                                                 ),
                                               ),
                                               SizedBox(height: 2.h),
                                               Text(
-                                                'Al-Noor Traders',
+                                                vendorNameDisplay,
                                                 style: TextStyle(
                                                   fontSize: 18.sp,
                                                   fontWeight: FontWeight.bold,

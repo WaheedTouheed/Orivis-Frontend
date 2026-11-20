@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/profile_state_service.dart';
 import '../../../../core/storage/secure_storage_service.dart';
+import '../../../../core/widgets/profile_picture_viewer.dart';
 import '../../../auth/presentation/screens/welcome_role_screen.dart';
 import '../../../marketplace/presentation/screens/received_bids_screen.dart';
 import '../../../scan/presentation/screens/scan_orchard_screen.dart';
@@ -44,6 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final pickedFile = await picker.pickImage(source: source);
       if (!mounted) return;
       if (pickedFile != null) {
+        await ProfileStateService().updateProfileImage(pickedFile.path);
         setState(() {
           _profileImage = File(pickedFile.path);
         });
@@ -108,6 +111,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             SizedBox(height: 16.h),
+
+            // Option 0: View Profile Picture
+            ListTile(
+              leading: Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE3F2FD),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.fullscreen_rounded,
+                  color: Color(0xFF1976D2),
+                  size: 20.r,
+                ),
+              ),
+              title: Text(
+                'View Profile Picture',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryText,
+                ),
+              ),
+              subtitle: Text(
+                'Open full-screen photo view',
+                style:
+                    TextStyle(fontSize: 11.sp, color: AppColors.secondaryText),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                showProfilePictureViewer(
+                  context: context,
+                  imageFile: ProfileStateService().profileImageFile,
+                  name: ProfileStateService().userName,
+                  onChangePhoto: _showImageSourceModal,
+                );
+              },
+            ),
+            const Divider(color: AppColors.cardBorder, height: 1),
 
             // Option 1: Camera
             ListTile(
@@ -228,9 +270,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (result != null && mounted) {
+      final newName = result['name'] ?? _userName;
+      final newPhone = result['phone'] ?? _phoneNumber;
+      await ProfileStateService().updateProfile(name: newName, phone: newPhone);
       setState(() {
-        _userName = result['name'] ?? _userName;
-        _phoneNumber = result['phone'] ?? _phoneNumber;
+        _userName = newName;
+        _phoneNumber = newPhone;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -463,136 +508,154 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.warmCream,
-        body: Column(
-          children: [
-            // ==========================================
-            // SCROLLABLE CONTENT
-            // ==========================================
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    // ==========================================
-                    // 1. PROFILE HEADER
-                    // ==========================================
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.only(
-                        top: topPadding > 0 ? topPadding + 16.h : 24.h,
-                        bottom: 32.h,
-                        left: 20.w,
-                        right: 20.w,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.darkGreen,
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(32.r),
-                          bottomRight: Radius.circular(32.r),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          // Avatar Stack with Camera Button
-                          Stack(
-                            alignment: Alignment.center,
+    return AnimatedBuilder(
+      animation: ProfileStateService(),
+      builder: (context, _) {
+        final profileState = ProfileStateService();
+        final imageFile = profileState.profileImageFile;
+        final displayName = profileState.userName;
+        final displayEmail = profileState.userEmail;
+        final initials = displayName.isNotEmpty
+            ? displayName
+                .split(' ')
+                .map((e) => e.isNotEmpty ? e[0] : '')
+                .take(2)
+                .join()
+                .toUpperCase()
+            : 'AR';
+
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          ),
+          child: Scaffold(
+            backgroundColor: AppColors.warmCream,
+            body: Column(
+              children: [
+                // ==========================================
+                // SCROLLABLE CONTENT
+                // ==========================================
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        // ==========================================
+                        // 1. PROFILE HEADER
+                        // ==========================================
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.only(
+                            top: topPadding > 0 ? topPadding + 16.h : 24.h,
+                            bottom: 32.h,
+                            left: 20.w,
+                            right: 20.w,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.darkGreen,
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(32.r),
+                              bottomRight: Radius.circular(32.r),
+                            ),
+                          ),
+                          child: Column(
                             children: [
-                              InkWell(
-                                onTap: _showImageSourceModal,
-                                borderRadius: BorderRadius.circular(48.r),
-                                child: Container(
-                                  height: 96.r,
-                                  width: 96.r,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: const Color(0xFFF99A20),
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 3.w,
+                              // Avatar Stack with Camera Button
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  InkWell(
+                                    onTap: _showImageSourceModal,
+                                    borderRadius: BorderRadius.circular(48.r),
+                                    child: Container(
+                                      height: 96.r,
+                                      width: 96.r,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: const Color(0xFFF99A20),
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 3.w,
+                                        ),
+                                      ),
+                                      child: ClipOval(
+                                        child: imageFile != null
+                                            ? Image.file(
+                                                imageFile,
+                                                fit: BoxFit.cover,
+                                                width: 96.r,
+                                                height: 96.r,
+                                              )
+                                            : Center(
+                                                child: Text(
+                                                  initials,
+                                                  style: TextStyle(
+                                                    fontSize: 32.sp,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                      ),
                                     ),
                                   ),
-                                  child: ClipOval(
-                                    child: _profileImage != null
-                                        ? Image.file(
-                                            _profileImage!,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Center(
-                                            child: Text(
-                                              'AR',
-                                              style: TextStyle(
-                                                fontSize: 32.sp,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: InkWell(
+                                      onTap: _showImageSourceModal,
+                                      borderRadius: BorderRadius.circular(16.r),
+                                      child: Container(
+                                        height: 32.r,
+                                        width: 32.r,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: AppColors.darkGreen,
+                                            width: 1.5.w,
                                           ),
+                                        ),
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.camera_alt_rounded,
+                                            size: 16.r,
+                                            color: AppColors.darkGreen,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
+                                ],
+                              ),
+
+                              SizedBox(height: 16.h),
+
+                              Text(
+                                displayName,
+                                style: TextStyle(
+                                  fontSize: 22.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: InkWell(
-                                  onTap: _showImageSourceModal,
-                                  borderRadius: BorderRadius.circular(16.r),
-                                  child: Container(
-                                    height: 32.r,
-                                    width: 32.r,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: AppColors.darkGreen,
-                                        width: 1.5.w,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.camera_alt_rounded,
-                                        size: 16.r,
-                                        color: AppColors.darkGreen,
-                                      ),
-                                    ),
-                                  ),
+
+                              SizedBox(height: 4.h),
+
+                              Text(
+                                '$displayEmail · $_role',
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  color: const Color(0xFFDCE9E0),
                                 ),
                               ),
                             ],
                           ),
+                        ),
 
-                          SizedBox(height: 16.h),
-
-                          Text(
-                            _userName,
-                            style: TextStyle(
-                              fontSize: 22.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-
-                          SizedBox(height: 4.h),
-
-                          Text(
-                            '$_email · $_role',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              color: const Color(0xFFDCE9E0),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: 20.h),
+                        SizedBox(height: 20.h),
 
                     // ==========================================
                     // 2. ACCOUNT SECTION
@@ -746,7 +809,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
-  }
+  },
+);
+}
 
   Widget _buildSectionTitle(String title) {
     return Text(
